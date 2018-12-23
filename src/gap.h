@@ -2271,22 +2271,24 @@ inline int c_clip_extend_gap2_( uint64_t & ex_d, // results
     return 0;
 
 }
-
+/**
+ * Clip by anchoring gap shapes
+*/
 inline int64_t c_clip_(String<Dna5> & genome, 
-            String<Dna5> & read,
-            String<Dna5> & comstr,    //complement revers of read
-            uint64_t gs_start, 
-            uint64_t gs_end, 
-            uint64_t gr_start,
-            uint64_t gr_end,
-            uint64_t gr_strand,
-            uint64_t genomeId,
-            String<uint64_t> & g_hs,
-            String<uint64_t> & g_anchor,
-            int band,
-            int p1, 
-            int clip_direction = 1
-            )
+		               String<Dna5> & read,
+		               String<Dna5> & comstr,    //complement revers of read
+		               uint64_t gs_start, 
+		               uint64_t gs_end, 
+		               uint64_t gr_start,
+		               uint64_t gr_end,
+		               uint64_t gr_strand,
+		               uint64_t genomeId,
+		               String<uint64_t> & g_hs,
+		               String<uint64_t> & g_anchor,
+		               int band,
+		               int p1, 
+		               int clip_direction = 1
+		              )
 {
     std::cout << "[]::c_clip_ start " << gs_start << " " << gs_end << " " << gr_start << " " << gr_end << "\n";
     //clear(g_anchor);
@@ -2378,43 +2380,40 @@ inline int64_t c_clip_(String<Dna5> & genome,
  *         \
  *   path1 path2
  */
-inline int g_alignGap_(String<Dna5> & seq,
-                        String<Dna5> & read,
-                        String<Dna5> & comstr, //complement reverse of the read
-                        String<uint64_t> & tiles,
-                        String<uint64_t> & clips,
-                        String<uint64_t> & g_hs,
-                        String<uint64_t> & g_hs_anchor,
-                        uint64_t g_start,
-                        uint64_t g_end, 
-                        uint64_t r_start,
-                        uint64_t r_end,
-                        uint64_t  main_strand,
-                        uint64_t genomeId,
-                        int direction,
-                        int p1
-)
+inline int g_ClipType_(String<Dna5> & seq,
+                          String<Dna5> & read,
+                          String<Dna5> & comstr, //complement reverse of the read
+                          String<uint64_t> & tiles,
+                          String<uint64_t> & clips,
+                          String<uint64_t> & g_hs,
+                          String<uint64_t> & g_hs_anchor,
+                          uint64_t g_start,
+                          uint64_t g_end, 
+                          uint64_t r_start,
+                          uint64_t r_end,
+                          uint64_t  main_strand,
+                          uint64_t genomeId,
+                          int direction,
+                          int p1
+						)
 {
     std::cout << "[]::g_align_gap_::begin " << length(tiles) << " " << r_end - r_start << " " << g_end - g_start << " " << r_start << " " << r_end << " " << length(read)<< "\n";
-    /// Insert a head tile and tail tile, so all tiles from the original tiles can be processed in one for loop
-    /// The inserted head tile and tail tile will be removed at the end of the function, so it will affect the original tiles.
-    
+    /// Insert the head tile and tail tile \
+    	such that tiles from the original tiles can be processed in one 'for loop'.\
+    	The inserted head tiles will be removed at the end\
+    	without affecting the original tiles.
     uint64_t r_start_flip = _flipCoord (r_start, length(read) - 1, main_strand);
     uint64_t r_end_flip = _flipCoord (r_end, length(read) - 1, main_strand);
     if (main_strand)
     {
         std::swap (r_start_flip, r_end_flip);
     }
-
- 
     uint64_t head_tile = _DefaultCord.createCord(_createSANode(genomeId, g_start), 
                                                  r_start_flip, 
                                                  main_strand);
     uint64_t tail_tile = _DefaultCord.createCord(_createSANode(genomeId, g_end),
                                                 r_end_flip,
                                                 main_strand);
-    //std::cout << "[]::g_align_gap_::r_start_flip " << r_start << " " << r_start_flip << " " << r_end_flip << "\n";
-
     insert (tiles, 0, head_tile);
     appendValue (tiles, tail_tile);
 
@@ -2484,10 +2483,8 @@ inline int g_alignGap_(String<Dna5> & seq,
         {
             tile1 = tiles[i];
             tile2 = tiles[i + 1];
-            //std::cout << "[]::g_align_gap_lrx " << (sv_flags[i] & g_sv_r) << " " << (sv_flags[i+1] & g_sv_l) << " " << _defaultTile.getX(tile1) << " " << _defaultTile.getX(tile2) << "\n";
-            if ((sv_flags[i] & g_sv_r) && (sv_flags[i + 1] & g_sv_l)) 
+            if ((sv_flags[i] & g_sv_r) && (sv_flags[i + 1] & g_sv_l))  
             {
-                //std::cout << "[]::g_align_gap_ sv_exists lr " << delta <<"\n";
                 cgend = _getSA_i2(_defaultTile.getX(tile2)) + window_size;
                 cgstart = std::min(_getSA_i2(_defaultTile.getX(tile1)), cgend - 2 * window_size);
                 //cgstart = cgend - 2 * window_size;
@@ -2503,8 +2500,7 @@ inline int g_alignGap_(String<Dna5> & seq,
                 band = int(90.0 * delta / window_size);
                 crstrand = _defaultTile.getStrand(tile2);
                 std::cout << "[]::g_align_gap_lrc _sv_exists" << cgstart << " " << cgend << " " << crstart << " " << crend << " " << (sv_flags[i] & g_sv_r) << " " << (sv_flags[i+1] & g_sv_l) << " " << i << " " << length(sv_flags) - 1<< "\n";
-                clip = clip_window (seq, read, comstr, genomeId, cgstart, cgend, crstart, crend, crstrand, band, 1); 
-                ///kmer clip without alignment
+                //clip = clip_window (seq, read, comstr, genomeId, cgstart, cgend, crstart, crend, crstrand, band, 1); \
                 clip = c_clip_ (seq, read, comstr, cgstart, cgend, crstart, crend, crstrand, genomeId, g_hs, g_hs_anchor, band, p1, 1);   
                 std::cout << "xxgnomeid " << _getSA_i1(_DefaultCord.getCordX(clip)) << "\n";
                 appendValue (clips, clip);
@@ -2553,13 +2549,11 @@ inline int g_alignGap_(String<Dna5> & seq,
     }
     
     return 0;
-
     /// remove the inserted head and tail tiles;
 }
 
-
 /**
- * 1.Map gaps between given cords [cord1, cord2] as follows
+ * 1.Map gaps between given cords [cord1, cord2] as the following comments
  *  |cord1---------cord2|
  *  |--------gap--------|
  *  Both cord1 and cord2 will be extend towards right or left at each side.
@@ -2631,7 +2625,7 @@ inline int mapGap_ (StringSet<String<Dna5> > & seqs,
                 thd_tileSize,
                 direction
             );
-    g_alignGap_(seqs[genomeId], read, comstr, tiles, clips, g_hs, g_anchor, gs_start, gs_end, gr_start, gr_end, strand, genomeId, direction, p1);
+    g_ClipType_(seqs[genomeId], read, comstr, tiles, clips, g_hs, g_anchor, gs_start, gs_end, gr_start, gr_end, strand, genomeId, direction, p1);
     return length(tiles);
 }
 
@@ -2659,8 +2653,8 @@ inline int mapGapTail_(StringSet<String<Dna5> > & seqs,
 */
 
 /**
- * Re-map gaps in cords.
- * gaps at the begin or end of the read are also processed.
+ * Re-map gaps in cords
+ * including gaps at the begining or the end of the read.
  */
 int mapGaps(StringSet<String<Dna5> > & seqs, 
             String<Dna5> & read, 
@@ -2683,10 +2677,10 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
     }
     String <uint64_t> tiles;
     uint64_t genomeId;
-    int64_t extend_len = 10000;
-    int last_flag = 1;
     uint64_t gap_len = 0;
-    ///NOTE cords[0] is the head cord, so starts from 1
+    int64_t extend_len = 10000; //extension length for gaps at the begining or end of read
+    int last_flag = 1;
+    ///NOTE cords[0] is the head-cord recording cords information, so starts from 1
     for (unsigned i = 1; i < length(cords); i++)
     {
         if (last_flag == 1)  ///left clip first cord
@@ -2762,16 +2756,3 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
     return gap_len;
     //return 0;
 }
-/*
-int mapGaps(StringSet<String<Dna5> > & seqs, StringSet<String<Dna5> > & reads, 
-            StringSet<String<uint64_t> > & cords, unsigned const thd_gap, unsigned const thd_tileSize)
-{
-    for (unsigned k = 0; k < length(reads); k++)
-    {
-        mapGaps(seqs, reads[k], cords[k], thd_gap, thd_tileSize);
-    }
-    return 0;
-}
-*/
-
-
