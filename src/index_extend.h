@@ -130,306 +130,257 @@ template <typename TObject, unsigned TSPAN, unsigned TWEIGHT>
 
 
 //=============================================================
-// definition of some types for mimizer index
-    struct hPair
-    {
-        uint64_t i1;
-        uint64_t i2;
-        inline hPair & operator = (hPair & b)
-        {
-            i1 = b.i1;
-            i2 = b.i2;
-            return *this;
-        }
-    };
-//==============================================================
+//Definition of dir (uint64_t)
+//bodyNode: length1[4]|length2[38]|YValue[20]|code[2]: code={1}
+//headNode: hvalue(/XValue)[62]|code[2]: code={2,3}, 2:head, 3:virtual head
+//code  0 empty
+//code  2 head 10
+//code  3 virtual head 11
+//code  1 body  01
+static const uint64_t _dirEmpty = (uint64_t)1 << 63;
+static const uint64_t _bitEmpty = 0;
+static const uint64_t _bitLength = ((uint64_t)1 << 58) - 1;
+static const uint64_t _bitValue = ((uint64_t)1 << 56) - 1;
+static const unsigned _bitLength_END = 60;
+static const unsigned _bitValue_END = 2;
 
-//=============================================================
-//definition of types of elements in dir (uint64_t)
-    //bodyNode=
-    //length1[4] length2[38] YValue[20] code[2]: code={1}
-    //
-    //headNode=
-    //hvalue(/XValue)[62] code[2]: code={2,3}, 2:head, 3:virtual head
-    //
-    //code  0 empty
-    //code  2 head 10
-    //code  3 virtual head 11
-    //code  1 body  01
+//HeadNode(H):
+//H :=  (h/X)Value[62]|HeadType[2]: 0:=empty 2:=head 3:=virtual head
+static const unsigned _HeadValue_bits = 3;
+static const uint64_t _HeadType_code = 2;
+static const uint64_t _HeadTypeVtl_code = 3;
+static const uint64_t _HeadTypeHVl_code = 4;
 
-    static const uint64_t _dirEmpty = (uint64_t)1 << 63;
-    static const uint64_t _bitEmpty = 0;
-    static const uint64_t _bitLength = ((uint64_t)1 << 58) - 1;
-    static const uint64_t _bitValue = ((uint64_t)1 << 56) - 1;
-    static const unsigned _bitLength_END = 60;
-    static const unsigned _bitValue_END = 2;
+// BodyNode(B):
+// B := YValue[23]|BodyType[1]: |counth[40]
+// occ = counth[n+1] - count[n] = (B[n+1] - B[n]) & bit, bit = 00..0011...11
+static const unsigned _BodyValue_bits = 41;
+static const unsigned _BodyType_bits = 40;
+//static const unsigned _BodyValue_bits = 2;
+static const uint64_t _BodyType_code = 1;
+static const uint64_t _BodyTypeEnd_code = 0;
+static const uint64_t _BodyType_key = ~((uint64_t)1 << _BodyType_bits);
+static const uint64_t _getBody = ((uint64_t)1 << _BodyType_bits) - 1;
+static const uint64_t _bitEmptyType = 0;
+static const uint64_t _bitCode = 3;                                 // node(value) & _bitCode to acquire the type of the node 
+//static const uint64_t _bitValue2 = ((uint64_t)1 << 22) - 1;
+static const uint64_t _bitEmptyCode = 0;
+static const uint64_t _bitBodyCode = 1;
+static const uint64_t _bitHeadCode = 2;
+static const uint64_t _bitVtlHeadCode = 3;
+//SA node:= seq num i1[10]| base num i2[30]
+static uint64_t _BaseNum_bits = 30 ;    
+static uint64_t _SeqNum_bits = _BodyType_bits - _BaseNum_bits;    
+static uint64_t _BaseNum_code = ((uint64_t)1 << _BaseNum_bits) - 1;
+static uint64_t _BaseNum_SeqMask = (1ULL << _SeqNum_bits) - 1;
     
-    //HeadNode(H):
-    //H :=  (h/X)Value[62]|HeadType[2]: 0:=empty 2:=head 3:=virtual head
-    static const unsigned _HeadValue_bits = 3;
-    static const uint64_t _HeadType_code = 2;
-    static const uint64_t _HeadTypeVtl_code = 3;
-    static const uint64_t _HeadTypeHVl_code = 4;
-    // BodyNode(B):
-    // B := YValue[23]|BodyType[1]: |counth[40]
-    // occ = counth[n+1] - count[n] = (B[n+1] - B[n]) & bit, bit = 00..0011...11
-    static const unsigned _BodyValue_bits = 41;
-    static const unsigned _BodyType_bits = 40;
-    //static const unsigned _BodyValue_bits = 2;
-    static const uint64_t _BodyType_code = 1;
-    static const uint64_t _BodyTypeEnd_code = 0;
-    static const uint64_t _BodyType_key = ~((uint64_t)1 << _BodyType_bits);
-    static const uint64_t _getBody = ((uint64_t)1 << _BodyType_bits) - 1;
 
-    static const uint64_t _bitEmptyType = 0;
+static const uint64_t _Empty_Dir_ = -1;
 
-    static const uint64_t _bitCode = 3;                                 // node(value) & _bitCode to acquire the type of the node 
-    //static const uint64_t _bitValue2 = ((uint64_t)1 << 22) - 1;
-    static const uint64_t _bitEmptyCode = 0;
-    static const uint64_t _bitBodyCode = 1;
-    static const uint64_t _bitHeadCode = 2;
-    static const uint64_t _bitVtlHeadCode = 3;
-  
-    //SA node:= seq num i1[10]| base num i2[30]
-    static uint64_t _BaseNum_bits = 30 ;    
-    static uint64_t _SeqNum_bits = _BodyType_bits - _BaseNum_bits;    
-    static uint64_t _BaseNum_code = ((uint64_t)1 << _BaseNum_bits) - 1;
-    static uint64_t _BaseNum_SeqMask = (1ULL << _SeqNum_bits) - 1;
-        
- 
-    static const uint64_t _Empty_Dir_ = -1;
-
-    static const unsigned blocklimit = 32;
+static const unsigned blocklimit = 32;
     
 //==============================================================
-    template <typename HValue>
-    inline HValue _makeHeadNode(HValue code)
-    {
-        return (code << _HeadValue_bits) + _HeadType_code;
-    } 
-    template <typename HValue>
-    inline HValue _makeVtlHeadNode(HValue code)
-    {
-        return (code << _HeadValue_bits) + _HeadTypeVtl_code;
-    }
-    template <typename HValue>
-    inline HValue _makeHVlHeadNode(HValue code)
-    {
-        return (code << _HeadValue_bits) + _HeadTypeHVl_code; 
-    }
-    template <typename HValue>
-    inline void _setHVlHeadNode(HValue & headNode, HValue const & hValue)
-    {
-        headNode = (hValue << _HeadValue_bits) + _HeadTypeHVl_code; 
-    }
-    template <typename HValue>
-    inline void _setHeadNode(HValue & headNode, HValue const & hValue)
-    {
-        headNode = (hValue << _HeadValue_bits) + _HeadType_code;
-    }
-    
-    template <typename HValue>
-    inline HValue _makeEmptyNode(HValue code)
-    {
-        return (code << _HeadValue_bits) + _bitEmptyType;
-    }
-    template <typename HValue, unsigned TSPAN, unsigned TWEIGHT>
-    inline HValue _getDirStart(Index<StringSet<DnaString>, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> >  & index)
-    {
-        return index.start;
-    }
-    template <typename HValue>
-    inline void _setBodyType_Begin(HValue & code){
-        code &= _BodyType_key; 
-    }
+template <typename HValue>
+inline HValue _makeHeadNode(HValue code)
+{
+    return (code << _HeadValue_bits) + _HeadType_code;
+} 
+template <typename HValue>
+inline HValue _makeVtlHeadNode(HValue code)
+{
+    return (code << _HeadValue_bits) + _HeadTypeVtl_code;
+}
+template <typename HValue>
+inline HValue _makeHVlHeadNode(HValue code)
+{
+    return (code << _HeadValue_bits) + _HeadTypeHVl_code; 
+}
+template <typename HValue>
+inline void _setHVlHeadNode(HValue & headNode, HValue const & hValue)
+{
+    headNode = (hValue << _HeadValue_bits) + _HeadTypeHVl_code; 
+}
+template <typename HValue>
+inline void _setHeadNode(HValue & headNode, HValue const & hValue)
+{
+    headNode = (hValue << _HeadValue_bits) + _HeadType_code;
+}
+template <typename HValue>
+inline HValue _makeEmptyNode(HValue code)
+{
+    return (code << _HeadValue_bits) + _bitEmptyType;
+}
+template <typename HValue, unsigned TSPAN, unsigned TWEIGHT>
+inline HValue _getDirStart(Index<StringSet<DnaString>, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> >  & index)
+{
+    return index.start;
+}
+template <typename HValue>
+inline void _setBodyType_Begin(HValue & code){
+    code &= _BodyType_key; 
+}
+template <typename HValue>
+inline HValue _ifBodyType(HValue code){
+    return code & (~_BodyType_key);
+}
+template <typename HValue>
+inline HValue _getHeadValue(HValue  code)
+{
+    return code >> _HeadValue_bits;  
+}
+template <typename HValue>
+inline void _setBodyNode(HValue & bodyNode, HValue const & YValue, HValue const & type, HValue const & counth)
+{
+    bodyNode = (YValue << _BodyValue_bits) + (type << _BodyType_bits) + counth;
+}
+template <typename HValue>
+inline HValue _getBodyValue(HValue code)
+{
+    return code >> _BodyValue_bits;
+}
+template <typename HValue>
+inline HValue _getBodyCounth(HValue & code)
+{
+    return code & _getBody;
+}
+template <typename HValue>
+inline HValue _createSANode(HValue const & i1, HValue const & i2)
+{
+    return (i1 << _BaseNum_bits) + i2;
+}
 
-    template <typename HValue>
-    inline HValue _ifBodyType(HValue code){
-        return code & (~_BodyType_key);
-    }
-    
-    template <typename HValue>
-    inline HValue _getHeadValue(HValue  code)
-    {
-        return code >> _HeadValue_bits;  
-    }
-    template <typename HValue>
-    inline void _setBodyNode(HValue & bodyNode, HValue const & YValue, HValue const & type, HValue const & counth)
-    {
-        bodyNode = (YValue << _BodyValue_bits) + (type << _BodyType_bits) + counth;
-    }
-    template <typename HValue>
-    inline HValue _getBodyValue(HValue code)
-    {
-        return code >> _BodyValue_bits;
-    }
-    template <typename HValue>
-    inline HValue _getBodyCounth(HValue & code)
-    {
-        return code & _getBody;
-    }
-
-    template <typename HValue>
-    inline HValue _createSANode(HValue const & i1, HValue const & i2)
-    {
-        return (i1 << _BaseNum_bits) + i2;
-    }
-
-    template <typename HValue>
-    inline void _setSANode(HValue & node, HValue const & i1, HValue const & i2)
-    {
-        node = (i1 << _BaseNum_bits) + i2;
-    }
-    
-
-    template <typename HValue> 
-    inline HValue _getSA_i1(HValue const & node)
-    {
-        return (node >> _BaseNum_bits) & _BaseNum_SeqMask;
-    }
-    template <typename HValue>
-    inline HValue _getSA_i2(HValue const & node)
-    {
-        return node & _BaseNum_code;
-    }
-    
+template <typename HValue>
+inline void _setSANode(HValue & node, HValue const & i1, HValue const & i2)
+{
+    node = (i1 << _BaseNum_bits) + i2;
+}
+template <typename HValue> 
+inline HValue _getSA_i1(HValue const & node)
+{
+    return (node >> _BaseNum_bits) & _BaseNum_SeqMask;
+}
+template <typename HValue>
+inline HValue _getSA_i2(HValue const & node)
+{
+    return node & _BaseNum_code;
+}
 //x-end: min shape open index 
 
-
-   
-    //x1-begin
-    //template <typename TIndex, typename THashValue, typename TParallelTag>
-
-    template < typename TBucketMap, typename TValue >
-    inline TValue
-    _hashFunction1(TBucketMap const &, TValue val)
-    {
+//x1-begin
+//template <typename TIndex, typename THashValue, typename TParallelTag>
+template < typename TBucketMap, typename TValue >
+inline TValue
+_hashFunction1(TBucketMap const &, TValue val)
+{
     uint64_t key = val;
-          key = (~key) + (key << 21); // key = (key << 21) - key - 1;
-  key = key ^ (key >> 24);
-  key = (key + (key << 3)) + (key << 8); // key * 265
-  key = key ^ (key >> 14);
-  key = (key + (key << 2)) + (key << 4); // key * 21
-  key = key ^ (key >> 28);
-  key = key + (key << 31);
-  return key;        
-    }
+    key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+    key = key ^ (key >> 24);
+    key = (key + (key << 3)) + (key << 8); // key * 265
+    key = key ^ (key >> 14);
+    key = (key + (key << 2)) + (key << 4); // key * 21
+    key = key ^ (key >> 28);
+    key = key + (key << 31);
+    return key;        
+}
 
-    template<typename TDir, typename THashValue>
-    inline THashValue
-    requestDir(TDir & dir, THashValue hlen, THashValue code, THashValue code1)//, Tag<TParallelTag> parallelTag)
-    //code:headNode, code1:pointerTobody
-    {
-        //std::cerr << code << " " << len << std::endl;
-        typedef unsigned long TSize;
-        //TSize hlen = 536870913 ;
-        //TSize hlen = 2147483649;
-        if (hlen == 0ul) return code;
-        
-        TSize h1 = _hashFunction1(dir, _getHeadValue(code));
+template<typename TDir, typename THashValue>
+inline THashValue
+requestDir(TDir & dir, THashValue hlen, THashValue code, THashValue code1)//, Tag<TParallelTag> parallelTag)
+//code:headNode, code1:pointerTobody
+{
+    //std::cerr << code << " " << len << std::endl;
+    typedef unsigned long TSize;
+    //TSize hlen = 536870913 ;
+    //TSize hlen = 2147483649;
+    if (hlen == 0ul) return code;
+    
+    TSize h1 = _hashFunction1(dir, _getHeadValue(code));
 #ifdef SEQAN_OPENADDRESSING_COMPACT
-        --hlen;
-        h1 %= hlen;
+    --hlen;
+    h1 %= hlen;
 #else
-        hlen -= 2;
-        h1 &= hlen;
+    hlen -= 2;
+    h1 &= hlen;
 #endif
-        TSize delta = 0;
-        (void)delta;
-        while(dir[h1] | dir[h1+1]) 
-        {
-            switch(code ^ dir[h1]){
-                case 0:
-                    return h1;
-                case 1:
-                    return h1;
-                default:
-                    h1 = (h1 + delta + 1) & hlen;
-                    delta++;
-            }
-        }
-        dir[h1] = code;
-        dir[h1 + 1] = code1;
-        return h1;
-    }
-
-    //x-end2:
-    
-    template <typename TObject, unsigned TSPAN, unsigned TWEIGHT, typename TValue, typename TSpec>
-    inline typename Value< Shape<TValue, Minimizer<TSPAN, TWEIGHT, TSpec> > >::Type 
-    getDir(Index<TObject, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> > const & index, Shape<TValue, Minimizer<TSPAN, TWEIGHT, TSpec> > const & shape)
+    TSize delta = 0;
+    (void)delta;
+    while(dir[h1] | dir[h1+1]) 
     {
-        typedef unsigned long TSize;
-        typedef typename Value< Shape<TValue, Minimizer<TSPAN, TWEIGHT, TSpec> > >::Type THashValue;
-        // get size of the index
-
-        // check whether bucket map is disabled and
-        // where the hash should be found if no collision took place before
-    
-        THashValue key, it;
-        TSize hlen = index.start - 2;
-        TSize h1 = _hashFunction1(index.dir, shape.XValue) & hlen;
-        //if (hlen == 0ul) return index._Empty_Dir_;
-
-//#ifdef SEQAN_OPENADDRESSING_COMPACT
-//        --hlen;
-//        h1 %= hlen;
-//#else
-        //hlen -= 2;
-        //h1 &= hlen;
-//#endif
-        TSize delta = 0;
-        (void)delta;
-        _setHeadNode(key,shape.XValue);
-        while (index.dir[h1] | index.dir[h1+1])
-        {
-            switch (index.dir[h1] ^ key) 
-            {
-                case 0:
-                    it = _getHeadValue(index.dir[h1+1]);
-                    do{
-                    
-                        if (shape.YValue ==  _getBodyValue(index.dir[it]))
-                        {    
-                            return it;
-                        } 
-                    }while(_ifBodyType(index.dir[++it])); //until the begin of next block
-                    return index._Empty_Dir_ ;
-                case 1:
-                    _setHVlHeadNode(key, shape.hValue);
-                    h1 = _hashFunction1(index.dir, shape.hValue) & hlen;
-                    delta = 0;
-                    break;
-                default:
-                    h1 = (h1 + delta + 1) & hlen;
-                    delta++;
-            }
+        switch(code ^ dir[h1]){
+            case 0:
+                return h1;
+            case 1:
+                return h1;
+            default:
+                h1 = (h1 + delta + 1) & hlen;
+                delta++;
         }
-        return index._Empty_Dir_; 
     }
+    dir[h1] = code;
+    dir[h1 + 1] = code1;
+    return h1;
+}
+//x-end2:
 
-    
-    template <typename TObject, unsigned TSPAN, unsigned TWEIGHT>
-    inline __int64 _fullDirLength(Index<TObject, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> > const &index)
+template <typename TObject, unsigned TSPAN, unsigned TWEIGHT, typename TValue, typename TSpec>
+inline typename Value< Shape<TValue, Minimizer<TSPAN, TWEIGHT, TSpec> > >::Type 
+getDir(Index<TObject, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> > const & index, Shape<TValue, Minimizer<TSPAN, TWEIGHT, TSpec> > const & shape)
+{
+    typedef unsigned long TSize;
+    typedef typename Value< Shape<TValue, Minimizer<TSPAN, TWEIGHT, TSpec> > >::Type THashValue;
+    // get size of the index
+    // check whether bucket map is disabled and
+    // where the hash should be found if no collision took place before
+    THashValue key, it;
+    TSize hlen = index.start - 2;
+    TSize h1 = _hashFunction1(index.dir, shape.XValue) & hlen;
+    TSize delta = 0;
+    (void)delta;
+    _setHeadNode(key,shape.XValue);
+    while (index.dir[h1] | index.dir[h1+1])
     {
-        typedef Index<TObject, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> >    TIndex;
-        //typedef typename Fibre<TIndex, FibreShape>::Type                    TShape;
-        //typedef typename Host<TShape>::Type                                    TTextValue;
+        switch (index.dir[h1] ^ key) 
+        {
+            case 0:
+                it = _getHeadValue(index.dir[h1+1]);
+                do{
+                
+                    if (shape.YValue ==  _getBodyValue(index.dir[it]))
+                    {    
+                        return it;
+                    } 
+                }while(_ifBodyType(index.dir[++it])); //until the begin of next block
+                return index._Empty_Dir_ ;
+            case 1:
+                _setHVlHeadNode(key, shape.hValue);
+                h1 = _hashFunction1(index.dir, shape.hValue) & hlen;
+                delta = 0;
+                break;
+            default:
+                h1 = (h1 + delta + 1) & hlen;
+                delta++;
+        }
+    }
+    return index._Empty_Dir_; 
+}
 
-        double num_qgrams = _qgramQGramCount(index) * index.alpha;
-        //double max_qgrams = 2*pow((double)ValueSize<TTextValue>::VALUE, (double)length(indexShape(index)));
-        __int64 qgrams;
 
-        qgrams = (__int64)ceil(num_qgrams);
+template <typename TObject, unsigned TSPAN, unsigned TWEIGHT>
+inline __int64 _fullDirLength(Index<TObject, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> > const &index)
+{
+    typedef Index<TObject, IndexQGram<Minimizer<TSPAN, TWEIGHT>, OpenAddressing> >    TIndex;
+    double num_qgrams = _qgramQGramCount(index) * index.alpha;
+    __int64 qgrams;
+    qgrams = (__int64)ceil(num_qgrams);
 #ifndef SEQAN_OPENADDRESSING_COMPACT
-        __int64 power2 = 1;
-        while (power2 < qgrams)
-            power2 <<= 1;
-        qgrams = power2;
-    #endif
-            resize(const_cast<TIndex &>(index).bucketMap.qgramCode, qgrams + 1, Exact());
-        return qgrams + 1;
-    }
+    __int64 power2 = 1;
+    while (power2 < qgrams)
+        power2 <<= 1;
+    qgrams = power2;
+#endif
+        resize(const_cast<TIndex &>(index).bucketMap.qgramCode, qgrams + 1, Exact());
+    return qgrams + 1;
+}
 
 template <typename TObj, unsigned TSpan, unsigned TWeight>
 void _qgramClearDir(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpan, TWeight>, OpenAddressing> > & index)
@@ -455,199 +406,9 @@ void _qgramClearDir(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpan, 
     std::cerr << "        lengh(index.dir) = " << length(index.dir) << std::endl;
     std::cerr << "        End _qgramClearDir()" << std::endl;
 }
-/*
-template <unsigned TSpan, unsigned TWeight>
-void _qgramCountQGrams2(Index<StringSet<DnaString>, IndexQGram<Minimizer<TSpan, TWeight>, OpenAddressing > > & index)
-{
-    typedef Shape<Dna, Minimizer<TSpan, TWeight> > TM_Shape;
-    typedef Iterator<String<Dna> >::Type TIter;
-    typedef typename Value<TM_Shape>::Type HValue;
-    typedef std::tuple<HValue, HValue, HValue, HValue> HTuple;
-    typedef String<HTuple> Stringtuple;
-
-    TM_Shape shape;
-    Stringtuple hs, hs1;
-    HValue  m = 0, sum = 0;
-
-    double time = sysTime();
-    resize(hs, lengthSum(indexText(index)) - length(indexText(index)) * (shape.span - 1) + 1);
-
-    std::cerr << "        _qgramCountQGrams() sysTime(): " << sysTime() - time << std::endl;
-    std::cerr << "            lengthSum(StringSet) = " << lengthSum(indexText(index)) << std::endl;
-    for(HValue k = 0; k < length(indexText(index)); k++)
-    {
-        TIter it = begin(indexText(index)[k]);
-        hashInit(shape, it);
-        for (HValue j = 0; j < length(indexText(index)[k]) - shape.span + 1; j++)
-        {
-            hashNext(shape, it + j);
-            hs[m++] = std::make_tuple(shape.XValue, shape.hValue, shape.YValue, _createSANode(k, j));
-        }
-    }
-    std::cerr << "            make_tuple sysTime(): " << sysTime() - time << std::endl;
-    //hs[length(hs) - 1] = std::make_tuple((HValue)0, (HValue)0, (HValue)0, (HValue)1);
-    std::sort(begin(hs), end(hs) - 1,
-        [](const HTuple &a, const HTuple &b)
-        {return (std::get<0>(a) > std::get<0>(b)||(std::get<0>(a) == std::get<0>(b) && std::get<1>(a) > std::get<1>(b)));});
-    hs[length(hs) - 1] = std::make_tuple((HValue)1, (HValue)1, (HValue)0, (HValue)1);
-    std::cerr << "            sort sysTime(): " << sysTime() - time << " " << std::get<0>(hs[length(hs) - 2]) << " " << std::get<1>(hs[length(hs)- 2]) << std::endl;
-    HValue countx = 1, counth = 1, tmp = 0, countdh = 0, countb = 0, hk = 0;
-    resize(index.sa, length(hs) - 1);
-    for (HValue k = 1; k < length(hs); k++)
-    {
-        index.sa[k - 1] = std::get<3>(hs[k-1]);
-        if (std::get<1>(hs[k]) != std::get<1>(hs[k - 1]))
-        { _setBodyNode(index.dir[index.start + hk], std::get<2>(hs[k-1]), _BodyType_code, tmp);
-        if (std::get<0>(hs[k - 1]) == 0 && std::get<2>(hs[k - 1]) == 441204)
-            std::cerr <<"_getBodyValue = " << _getBodyValue(index.dir[index.start + hk]) << std::endl;
-            hk++;
-            countb++;
-            countdh++;
-            tmp = counth;
-        }
-        //else
-        counth++;
-
-        if (std::get<0>(hs[k]) != std::get<0>(hs[k - 1]))
-        {
-            if (countb < blocklimit)
-            {
-                requestDir(index.dir, index.start, _makeHeadNode(std::get<0>(hs[k-1])), _makeEmptyNode(index.start + hk - countb));
-                for (HValue j = 0; j < countb; j++)
-                    _setBodyType_Begin(index.dir[index.start + hk - countb]);
-            }
-            else
-            {
-                hk -= countb;
-                requestDir(index.dir, index.start, _makeVtlHeadNode(std::get<0>(hs[k-1])), _makeEmptyNode(index.start + hk));
-                for (HValue j = k - countx; j < k; j++)
-                    if (std::get<1>(hs[j]) != std::get<1>(hs[j + 1]))
-                    {
-                        requestDir(index.dir, index.start, _makeHVlHeadNode(std::get<1>(hs[j])), _makeEmptyNode(index.start+hk));
-                        _setBodyType_Begin(index.dir[index.start + hk]);
-                        hk++;
-                    }
-            }
-            countb = 0;
-            countx = 1;
-        }
-        else
-        {
-            countx++;
-        }
-    }
-    std::cerr << std::endl;
-    std::cerr << counth << std::endl;
-    resize(index.dir, index.start + countdh + 10);
-    _setBodyNode(index.dir[index.start + countdh], _bitEmpty, _BodyType_code, counth - 1); 
-    _setBodyType_Begin(index.dir[index.start + countdh]);
-    index._Empty_Dir_ = index.start + countdh + 1;
-    //_setBodyNode(index.dir[index.start + countdh], _bitEmpty, _BodyTypeEnd_code, counth - 1); 
-    //_setBodyType_Begin(index.dir[index.start + countdh]);
-    //index._Empty_Dir_ = index.start + countdh;
-    //_setBodyNode(index.dir[index.start + countdh + 1], _bitEmpty, _BodyTypeEnd_code, counth - 1); 
-    //_setBodyType_Begin(index.dir[index.start + countdh + 1]);
-    std::cerr << "            End _qgramCountQGrams() sysTime(): " << sysTime() - time << std::endl;
-}
 
 
-
-template <unsigned TSpan, unsigned TWeight>
-void _qgramCountQGrams3(Index<StringSet<DnaString  >, IndexQGram<Minimizer<TSpan, TWeight>, OpenAddressing > > & index)
-{
-    typedef Shape<Dna, Minimizer<TSpan, TWeight> > TM_Shape;
-    typedef Iterator<String<Dna> >::Type TIter;
-    typedef typename Value<TM_Shape>::Type HValue;
-    typedef std::tuple<HValue, HValue, HValue> HTuple;
-    typedef String<HTuple> Stringtuple;
-
-    TM_Shape shape;
-    Stringtuple hs, hs1;
-    HValue  m = 0, sum = 0;
-
-    double time = sysTime();
-    resize(hs, lengthSum(indexText(index)) - length(indexText(index)) * (shape.span - 1) + 1);
-
-    std::cerr << "        _qgramCountQGrams() sysTime(): " << sysTime() - time << std::endl;
-    std::cerr << "            lengthSum(StringSet) = " << lengthSum(indexText(index)) << std::endl;
-    for(HValue k = 0; k < length(indexText(index)); k++)
-    {
-        TIter it = begin(indexText(index)[k]);
-        hashInit(shape, it);
-        for (HValue j = 0; j < length(indexText(index)[k]) - shape.span + 1; j++)
-        {
-            hashNext(shape, it + j);
-            hs[m++] = std::make_tuple(shape.XValue, shape.YValue, _createSANode(k, j));
-        }
-    }
-    std::cerr << "            make_tuple sysTime(): " << sysTime() - time << std::endl;
-    //hs[length(hs) - 1] = std::make_tuple((HValue)0, (HValue)0, (HValue)0, (HValue)1);
-    std::sort(begin(hs), end(hs) - 1,
-        [](const HTuple &a, const HTuple &b)
-        {return (std::get<0>(a) < std::get<0>(b)||(std::get<0>(a) == std::get<0>(b) && std::get<1>(a) > std::get<1>(b)));});
-    hs[length(hs) - 1] = std::make_tuple((HValue)1, (HValue)0, (HValue)1);
-    std::cerr << "            sort sysTime(): " << sysTime() - time << std::endl;
-    HValue countx = 1, counth = 1, tmp = 0, countdh = 0, countb = 1, hk = 0;
-    resize(index.sa, length(hs) - 1);
-    for (HValue k = 1; k < length(hs); k++)
-    {
-        if (std::get<0>(hs[k]) ^ std::get<0>(hs[k - 1])|std::get<1>(hs[k]) ^ std::get<1>(hs[k - 1]))
-        { _setBodyNode(index.dir[index.start + hk], std::get<1>(hs[k-1]), _BodyType_code, tmp);
-            hk++;
-            countb++;
-            countdh++;
-            tmp = counth;
-        }
-        if (std::get<0>(hs[k]) ^ std::get<0>(hs[k - 1]))
-        {
-            
-            if (countb < blocklimit)
-            {
-                requestDir(index.dir, index.start, _makeHeadNode(std::get<0>(hs[k-1])), _makeEmptyNode(index.start + hk - countb));
-                for (HValue j = 0; j < countb; j++)
-                    _setBodyType_Begin(index.dir[index.start + hk - countb]);
-            }
-            else
-            {
-                hk -= countb;
-                requestDir(index.dir, index.start, _makeVtlHeadNode(std::get<0>(hs[k-1])), _makeEmptyNode(index.start + hk));
-                for (HValue j = k - countx; j < k; j++)
-                    if ((std::get<0>(hs[j]) ^ std::get<0>(hs[j + 1])) | (std::get<1>(hs[j]) ^ std::get<1>(hs[j + 1])))
-                    {
-                        requestDir(index.dir, index.start, _makeHVlHeadNode(xy2h(shape, std::get<0>(hs[j]),std::get<1>(hs[j]))), _makeEmptyNode(index.start+hk));
-                        _setBodyType_Begin(index.dir[index.start + hk]);
-                        hk++;
-                    }
-            }
-            countb = 0;
-            countx = 1;
-        }
-        else
-        {
-            countx++;
-        }
-        
-        index.sa[k - 1] = std::get<2>(hs[k-1]);
-        counth++;
-    }
-    std::cerr << std::endl;
-    std::cerr << counth << std::endl;
-    resize(index.dir, index.start + countdh + 10);
-    _setBodyNode(index.dir[index.start + countdh], _bitEmpty, _BodyType_code, counth - 1); 
-    _setBodyType_Begin(index.dir[index.start + countdh]);
-    index._Empty_Dir_ = index.start + countdh + 1;
-    //_setBodyNode(index.dir[index.start + countdh], _bitEmpty, _BodyTypeEnd_code, counth - 1); 
-    //_setBodyType_Begin(index.dir[index.start + countdh]);
-    //index._Empty_Dir_ = index.start + countdh;
-    //_setBodyNode(index.dir[index.start + countdh + 1], _bitEmpty, _BodyTypeEnd_code, counth - 1); 
-    //_setBodyType_Begin(index.dir[index.start + countdh + 1]);
-    std::cerr << "            End _qgramCountQGrams() sysTime(): " << sysTime() - time << std::endl;
-}
-*/
-
-//template <typename TObj, typename Compare>
 template <typename TIter>
-//inline void _mergeSort(String<Iterator<TObj>::Type> & begin, String<Iterator<TObj>::Type> & end, Compare cmp)
 inline void _mergeSort(TIter const & it, String<unsigned> begin, String<unsigned> end)
 {
     //typedef typename Iterator<TObj>::Type TIter;
@@ -672,42 +433,12 @@ inline void _mergeSort(TIter const & it, String<unsigned> begin, String<unsigned
         begin[maxk] += 1;
     } 
 }
-/*
-//template <typename TObj, typename Compare>
-template <typename TIter>
-inline void 
-//_radixSort(Iterator<TObj>::Type const & begin, Iterator<TObj>::Type const & end, Compare compare)
-_radixSort(TIter const & begin,  TIter const & end, 
-            unsigned const p_bit, unsigned const & l)
-{
-    unsigned  l_move = 64, r_move = 64 - p_bit;
-    //uint64_t count[1<<p_bit];
-    uint64_t count[1024];
-    //int count[1024];
-    String<Pair<uint64_t, uint64_t> > output;
-    resize(output, end - begin);
-    for (uint64_t j = 0; j < l; j++)
-    {
-        l_move -= p_bit;
-        for (int k = 0; k< (1<<p_bit); k++)
-            count[k]=0;
-        for (int64_t k = 0; k < end - begin; k++)
-            count[(begin + k)->i1 << l_move >> r_move]++;
-        for (int k = 1; k < (1 << p_bit); k++)
-            count[k] += count[k - 1];
-        for (int64_t k = end - begin - 1; k >=0; k-- )
-            output[--count[(begin + k)->i1 << l_move >> r_move]] = *(begin + k);
-        for (int64_t k = 0; k < end - begin; k++)
-            *(begin + k)  = output[k];
-    }
-}
-*/
 
 template <typename TIter>
-inline void 
-//_radixSort(Iterator<TObj>::Type const & begin, Iterator<TObj>::Type const & end, Compare compare)
-_radixSort(TIter const & begin,  TIter const & end, 
-            unsigned const p_bit, unsigned const & l)
+inline void _radixSort(TIter const & begin,  
+                       TIter const & end, 
+                       unsigned const p_bit, 
+                       unsigned const & l)
 {
     unsigned  l_move = 64, r_move = 64 - p_bit;
     //uint64_t count[1<<p_bit];
@@ -727,14 +458,10 @@ _radixSort(TIter const & begin,  TIter const & end,
             count[k] += count[k - 1];
         for (int64_t k = end - begin - 1; k >=0; k-- )
             output[--count[(begin + k)->i1 << l_move >> r_move]] = *(begin + k);
-        //for (int64_t k = 0; k < end - begin; k++)
-        //    *(begin + k)  = output[k];
         std::swap(begin, begin1);
         std::swap(end, end1);
     }
 }
-
-
 
 template <typename TIter>
 inline void RMSort(TIter const & begin, TIter const & end)
@@ -827,8 +554,6 @@ inline void _sort3_i2_(TIt const & begin, const TIt & end, unsigned const & p_bi
     }
 }
 
-
-
 template <unsigned TSPAN, unsigned TWEIGHT>
 void _createValueArray2(StringSet<DnaString> & reads, String<Pair<uint64_t, uint64_t> > & hs, Shape<Dna, Minimizer<TSPAN, TWEIGHT> > & shape, int step, int l)
 {
@@ -878,7 +603,6 @@ void _createValueArray2(StringSet<DnaString> & reads, String<Pair<uint64_t, uint
         hs[q].i1 = tmp[n].i1;
         hs[q].i2 = tmp3[c] & (~mask);
         c++;
-        //std::cerr << c << " " << length(tmp3) << " " << q << " " << length(hs) << std::endl;
     }
     std::cerr << "        xvalue expand " << sysTime() - time << std::endl;
     hs[length(hs)-1].i2 |= mask;
@@ -891,18 +615,12 @@ void _createValueArray2(StringSet<DnaString> & reads, String<Pair<uint64_t, uint
             if (count < 20)                   // sort parameters
                 _insertSort(begin(hs) + k - count, begin(hs) + k);
             else
-                //std::sort(begin(hs) + k -count, begin(hs) + k, [](Pair<uint64_t, uint64_t> & a,
-                //Pair<uint64_t, uint64_t> & b){return a.i2 > b.i2;});
-    
-                //std::stable_sort(begin(hs) + k -count, begin(hs) + k, comp);
                 _sort3_i2_(begin(hs) + k - count, begin(hs) + k,8,8);
 
             count = 0;
         }
         count++;
    }
-
-
    std::cerr << "        End sort sysTime(): " <<  sysTime() - time << std::endl;
 }
 
@@ -965,7 +683,6 @@ void _createValueArray2(StringSet<String<Dna5> > & reads, String<Pair<uint64_t, 
         hs[q].i1 = tmp[n].i1;
         hs[q].i2 = tmp3[c] & (~mask);
         c++;
-    //std::cerr << " c " << c << " tmp " << length(tmp3) << " length " << length(hs) << " q " << q << std::endl;
     }
     std::cerr << "        xvalue expand " << sysTime() - time << std::endl;
     hs[length(hs)-1].i2 |= mask;
@@ -978,18 +695,12 @@ void _createValueArray2(StringSet<String<Dna5> > & reads, String<Pair<uint64_t, 
             if (count < 20)                   // sort parameters
                 _insertSort(begin(hs) + k - count, begin(hs) + k);
             else
-                //std::sort(begin(hs) + k -count, begin(hs) + k, [](Pair<uint64_t, uint64_t> & a,
-                //Pair<uint64_t, uint64_t> & b){return a.i2 > b.i2;});
-    
-                //std::stable_sort(begin(hs) + k -count, begin(hs) + k, comp);
                 _sort3_i2_(begin(hs) + k - count, begin(hs) + k,8,8);
 
             count = 0;
         }
         count++;
    }
-
-
    std::cerr << "        End sort sysTime(): " <<  sysTime() - time << std::endl;
 }
 
@@ -997,13 +708,9 @@ template <typename TObj, unsigned TSpan, unsigned TWeight>
 void _qgramCountQGrams(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpan, TWeight>, OpenAddressing > > & index)
 {
     typedef Shape<TObj, Minimizer<TSpan, TWeight> > TM_Shape;
-    //typedef Iterator<String<Dna> >::Type TIter;
     typedef typename Value<TM_Shape>::Type HValue;
-    //typedef std::tuple<HValue, HValue, HValue> HTuple;
     typedef Pair<uint64_t, uint64_t> PairH;
     typedef String<PairH> StringPairH;
-    //typedef String<HTuple> StringTuple;
-    //StringSet<DnaString> reads;
 
     TM_Shape shape;
     StringPairH hs, hs1;
@@ -1012,10 +719,6 @@ void _qgramCountQGrams(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpa
     double time = sysTime();
 
     resize(hs, lengthSum(indexText(index)) - length(indexText(index)) * (shape.span - 1) + 1);
-
-    //std::cerr << "        _qgramCountQGrams() sysTime(): " << sysTime() - time << std::endl;
-    //std::cerr << "            lengthSum(StringSet) = " << lengthSum(indexText(index)) << std::endl;
-
      _createValueArray2(indexText(index), hs, shape, 9, 5);
     hs[length(hs) - 1].i1 = 1;
     _setBodyNode(hs[length(hs) - 1].i2,  (HValue)0, (HValue)0, (HValue)1);//std::make_tuple((HValue)1, (HValue)0, (HValue)1);
@@ -1024,7 +727,6 @@ void _qgramCountQGrams(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpa
     resize(index.sa, length(hs) - 1);
     for (HValue k = 1; k < length(hs); k++)
     {
-        //if (std::get<0>(hs[k]) ^ std::get<0>(hs[k - 1])|std::get<1>(hs[k]) ^ std::get<1>(hs[k - 1]))
         if ((hs[k].i1 ^ hs[k - 1].i1 )|(_getBodyValue(hs[k].i2 ^ hs[k - 1].i2)))
         { _setBodyNode(index.dir[index.start + hk], _getBodyValue(hs[k-1].i2), _BodyType_code, tmp);
             hk++;
@@ -1064,8 +766,6 @@ void _qgramCountQGrams(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpa
         index.sa[k - 1] = _getBodyCounth(hs[k-1].i2);
         counth++;
     }
-    //std::cerr << std::endl;
-    //std::cerr << counth << std::endl;
     resize(index.dir, index.start + countdh + 10);
     _setBodyNode(index.dir[index.start + countdh], _bitEmpty, _BodyType_code, counth - 1); 
     _setBodyType_Begin(index.dir[index.start + countdh]);
@@ -1082,12 +782,12 @@ template <typename TObj, unsigned TSpan, unsigned TWeight>
 void _createQGramIndex(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpan, TWeight>, OpenAddressing > >& index, StringSet<String<TObj> > & seq)
 {
     double time = sysTime(); 
-    //std::cerr << "    createQGramIndexDirOnly() sysTime(): " << std::endl;
     _qgramClearDir(index);
     _qgramCountQGrams(index);
-    //std::cerr << "        End createQGramIndexDirOnly() sysTime(): " << sysTime() - time << std::endl;
-    std::cerr << "        index.dir " << (float)length(index.dir) /1024/1024/1024 *8 << " GB index.sa " 
-                << (float) length(index.sa) /1024/1024/128 << " GB" << std::endl;
+    std::cerr << "        index.dir " 
+              << (float)length(index.dir) /1024/1024/1024 *8 
+              << " GB index.sa " 
+              << (float) length(index.sa) /1024/1024/128 << " GB" << std::endl;
     std::cerr << "    End creating index. Time[s] " << sysTime() - time << std::endl;
 }
 
@@ -1095,10 +795,8 @@ template <typename TObj, unsigned TSpan, unsigned TWeight>
 void _createQGramIndex(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpan, TWeight>, OpenAddressing > >& index)
 {
     double time = sysTime(); 
-    //std::cerr << "    createQGramIndexDirOnly() sysTime(): " << std::endl;
     _qgramClearDir(index);
     _qgramCountQGrams(index);
-    //std::cerr << "        End createQGramIndexDirOnly() sysTime(): " << sysTime() - time << std::endl;
     std::cerr << "        index.dir " << (float)length(index.dir) /1024/1024/1024 *8 << " GB index.sa " 
                 << (float) length(index.sa) /1024/1024/128 << " GB" << std::endl;
     std::cerr << "    End creating index. Time[s] " << sysTime() - time << std::endl;
@@ -1108,7 +806,7 @@ void _createQGramIndex(Index<StringSet<String<TObj> >, IndexQGram<Minimizer<TSpa
 //Begin(P2):This section is to optimize 25mer for mapping
 
 //Hs: String<uint64_t>
-//types of node in Hs including: 1.head node and 2.body node
+//Hs_nodes: 1.head node and 2.body node
 //head: Headflag[1] = 0|sortFlag[1]|N/A[2]|Pointer[20]| xvalue[40]
 //body: bodyflag[1] = 1|N/A[2]|yvalue[20] |typeCode[1]|sa[40]
 static const unsigned XValueBit = 40;
@@ -1170,26 +868,27 @@ struct Hs
                    uint64_t const & bit = _DefaultHsBase.pointerBit, 
                    uint64_t const & typeFlag = _DefaultHsBase.typeMask);
     uint64_t makeHsHead(uint64_t const &, uint64_t const &, 
-                   uint64_t const & bit = _DefaultHsBase.pointerBit, 
-                   uint64_t const & typeFlag = _DefaultHsBase.typeMask);
+                        uint64_t const & bit = _DefaultHsBase.pointerBit, 
+                        uint64_t const & typeFlag = _DefaultHsBase.typeMask);
     uint64_t getHeadX(uint64_t const &, 
                       uint64_t const & = _DefaultHsBase.mask);
     uint64_t getHeadPtr(uint64_t const &, 
                         uint64_t const & = _DefaultHsBase.pointerBit, 
                         uint64_t const & = _DefaultHsBase.pointerMask);
-    void setHsBody(uint64_t &, uint64_t const &,  uint64_t const & id, uint64_t const & pos,
+    void setHsBody(uint64_t &, uint64_t const &, 
+                   uint64_t const & id, uint64_t const & pos,
                    uint64_t const & typeFlag = _DefaultHsBase.typeFlag
                   );
-    uint64_t makeHsBody(uint64_t const &,  uint64_t const & id, uint64_t const & pos,
-                   uint64_t const & typeFlag = _DefaultHsBase.typeFlag
+    uint64_t makeHsBody(uint64_t const &,  uint64_t const & id, 
+                        uint64_t const & pos,
+                        uint64_t const & typeFlag = _DefaultHsBase.typeFlag
                   );
     uint64_t getHsBodyY(uint64_t const &,
-        uint64_t const & = _DefaultHsBase.bodyYBit, 
-        uint64_t const & = _DefaultHsBase.bodyYMask
+                        uint64_t const & = _DefaultHsBase.bodyYBit, 
+                        uint64_t const & = _DefaultHsBase.bodyYMask
     );
-
     uint64_t getHsBodyS(uint64_t const & val, 
-        uint64_t const & mask = _DefaultHsBase.mask
+                        uint64_t const & mask = _DefaultHsBase.mask
     )
     {return val & mask;}
     void setHsHeadPtr(uint64_t &, uint64_t const &, 
@@ -1207,13 +906,13 @@ struct Hs
     {
         val |= _DefaultHsBase.bodyCodeFlag;
     }
-    
     bool isHsBodyReverseStrand(uint64_t & val)
     {
         return val & (_DefaultHsBase.bodyCodeFlag);
     }
-    
-    void setHsBodyY(uint64_t & val, uint64_t y, uint64_t const & bit = _DefaultHsBase.bodyYBit, uint64_t const & mask = _DefaultHsBase.bodyYMask)
+    void setHsBodyY(uint64_t & val, uint64_t y, 
+                    uint64_t const & bit = _DefaultHsBase.bodyYBit, 
+                    uint64_t const & mask = _DefaultHsBase.bodyYMask)
     {
        val = (val & (~(mask << bit))) | (y << bit);
     }
@@ -1227,7 +926,6 @@ struct Hs
 //  1 xvalue head
 //  2 head 10
 //  3 virtual head 
-
 
 struct XNodeBase   //define dirNode
 {
@@ -1282,19 +980,21 @@ struct XNodeFunc
     uint64_t getAddY();
     uint64_t hash(uint64_t const &);
     void setXNode(XNode &, XNode::TypeV1 const & val1, XNode::TypeV2 const &, 
-                XNodeBase::NodeType const &, XNodeBase::ReturnType const &, 
-                XNodeBase::Bit const & = _DefaultXNodeBase.bit,
-                XNodeBase::Bit const & = _DefaultXNodeBase.bit2
+                  XNodeBase::NodeType const &, XNodeBase::ReturnType const &, 
+                  XNodeBase::Bit const & = _DefaultXNodeBase.bit,
+                  XNodeBase::Bit const & = _DefaultXNodeBase.bit2
                  );
-    XNode::TypeV1 makeYXKey(typename Hs::ValueBodyType const &, XNode::TypeV1 const &, 
+    XNode::TypeV1 makeYXKey(typename Hs::ValueBodyType const &, 
+                            XNode::TypeV1 const &, 
                             XNodeBase::Mask const & = _DefaultHsBase.bodyYMask << _DefaultHsBase.bodyYBit, 
                             XNodeBase::Mask const & = _DefaultHsBase.mask);
-    XNode::TypeV1 collision(XNode::TypeV1 const &, XNode::TypeV1 const &, XNodeBase::Mask const & = _DefaultXNodeBase.mask2);
-    XNode::TypeV2L makeReturnVal(XNode const &, XNodeBase::Mask const & = _DefaultXNodeBase.mask2);
+    XNode::TypeV1 collision(XNode::TypeV1 const &, 
+                            XNode::TypeV1 const &, 
+                            XNodeBase::Mask const & = _DefaultXNodeBase.mask2);
+    XNode::TypeV2L makeReturnVal(XNode const &, 
+                                 XNodeBase::Mask const & = _DefaultXNodeBase.mask2);
     
 }_DefaultXNodeFunc;
-
-
 
 struct XString
 {
@@ -1423,67 +1123,8 @@ inline void Hs::setHsHeadPtr(uint64_t & val, uint64_t const & ptr,  uint64_t con
 {
     val = (val & mask) + (ptr << bit);
 }
-/*
- * bucket[]-
- */
-/*
-template <typename TIt>
-inline bool _hsSortX(TIt const & begin, TIt const & end, unsigned const & xValBitLen)
-{
-    if (xValBitLen <34 || xValBitLen > 42)
-    {
-        std::cerr << "[Error]: _dirSortX " << xValBitLen << "\n";
-        return false;
-    }
-    
-    unsigned bit[18] = {9,4,9,4,9,4,8,5,8,5,8,5,8,5,7,6,7,6}; //xValueBitLen 34 - 42;
-    
-    unsigned p_bit = bit[(xValBitLen - 34) << 1];
-    unsigned l =  bit[((xValBitLen - 34) << 1) + 1];
-    //std::cerr << p_bit << " " << l << std::endl;
-    unsigned  l_move = 64, r_move = 64 - p_bit;
-    uint64_t count[512];
-    //int count[1024];
-    
-    String<uint64_t> output;
-    resize(output, end - begin);
-    //std::cerr << "end - begin " <<end - begin << std::endl;
-    for (uint64_t j = 0; j < l; j++)
-    {
-        l_move -= p_bit;
-        for (int k = 0; k< (1<<p_bit); k++)
-            count[k]=0;
-        for (int64_t k = 0; k < end - begin; k += _DefaultHs.getHeadPtr(*(begin + k)))
-        {
-            count[*(begin + k) << l_move >> r_move] += _DefaultHs.getHeadPtr(*(begin + k));
-        }
-        for (int k = 1; k < (1 << p_bit); k++)
-        {
-            count[k] += count[k - 1];
-        }
-        for (int64_t k = end - begin - 1;  k >=0; k--)
-        {
-        
-            if (_DefaultHs.isHead(*(begin + k)))
-            {
-                uint64_t x = *(begin + k) << l_move >> r_move;
-                uint64_t ptr = _DefaultHs.getHeadPtr(*(begin + k));
-                count[x] -= ptr;
-                for (uint64_t it = 0; it < ptr; it++)
-                {
-                    output[count[x] + it] = *(begin + k + it);
-                }
-            }
-            
-        }
-        for (int64_t k = 0; k < end - begin; k++)
-            *(begin + k) = output[k];
-    }
-    return true;
-}
-*/
 
-/*
+/**
  * serial sort hs
  * bucket[]+
  */
@@ -1672,140 +1313,8 @@ inline bool _hsSortX_1(TIt const & begin, TIt const & end, unsigned const & xVal
     return true;
 }
 
-
-/* parallel radix sort
- * this function only applies for index of colleting minimizers, in which
- * ptr is constant 2.
- * It's optimized to reduce the memory by ~50%
-template <typename TIt>
-inline bool _hsSortX_2(TIt const & begin, TIt const & end, unsigned const & xValBitLen, unsigned threads)
-{
-    unsigned lowerBound = 20;
-    unsigned upperBound = 42;
-    uint64_t const ptr =  2;
-    uint64_t flagH =  (1 << _DefaultHsBase.pointerBitLen >> 1);
-    if (xValBitLen < lowerBound || xValBitLen > upperBound)
-    {
-        std::cerr << "[Error]: _dirSortX " << xValBitLen << "\n";
-       // return false;
-    }
-    
-    //unsigned const bit[18] = {9,4,9,4,9,4,8,5,8,5,8,5,8,5,7,6,7,6}; //xValueBitLen 34 - 42;
-    uint64_t empty = ~0;
-    unsigned const bit[upperBound - lowerBound + 1] 
-        = {10,2,11,2,12,2,7,4,7,4,10,3,9,4,9,4,8,5,8,5,7,6}; //xValueBitLen 34 - 42;
-    unsigned const p_bit = bit[(xValBitLen - lowerBound + 1) >> 1 << 1];
-    unsigned const l =  bit[((xValBitLen - lowerBound + 1) >> 1 << 1) + 1];
-    unsigned const r_move = 64 - p_bit;
-    unsigned l_move = 64;
-    uint64_t const mask = (1 << p_bit) - 1;
-    uint64_t size = (end - begin) / threads;
-    unsigned thd1 = end - begin - size * threads;
-    uint64_t thd_n1 = (size + 1) * thd1;
-    std::vector<std::vector<uint64_t> > ctd(threads, std::vector<uint64_t>((1<<p_bit) + 1, 0));
-    std::vector<std::vector<std::vector<uint64_t> > > next(threads, 
-                    std::vector<std::vector<uint64_t> >(threads, std::vector<uint64_t>((1 << p_bit) + 1, 0)));
-    
-    #pragma omp parallel 
-    {
-        unsigned thd_id = omp_get_thread_num();
-        #pragma omp for
-        for (int64_t k = 0; k < end - begin; k++)
-        {
-            if (_DefaultHs.isHead(*(begin + k)))
-            {
-                uint64_t x = *(begin + k) & mask;
-                if (thd_id == threads - 1)
-                    ctd[0][x + 1] += ptr;    
-                else
-                    ctd[thd_id + 1][x] += ptr;
-                    //ctd[x][thd_id + 1] += ptr;
-            }
-        }
-    }
-
-    unsigned PBit = 1 << p_bit;
-    for (uint64_t j = 0; j < l; j++)
-    {
-        l_move -= p_bit;
-        for (unsigned m = 1; m < threads; m++)
-            ctd[m][0] += ctd[m - 1][0];
-            //ctd[0][m] += ctd[0][m - 1];
-        for (unsigned n = 1; n < PBit; n++)
-        {
-            ctd[0][n] += ctd[threads - 1][n - 1];
-            //ctd[n][0] += ctd[n-1][threads - 1];
-            for (unsigned m=1; m < threads; m++)
-            {
-                ctd[m][n] += ctd[m-1][n];
-                //ctd[n][m] += ctd[n][m-1];
-            }
-        }
-
-        #pragma omp parallel 
-        {
-            unsigned thd_id = omp_get_thread_num();
-            #pragma omp for
-            for (int64_t k = 0; k < end - begin; k++)
-            {
-                if (_DefaultHs.isHead(*(begin + k)) && atomicXor(*(begin + k), )) 
-                {
-                    
-                    //while (!== empty)
-                    int64_t tk = k;
-                    unsigned tid = thd_id;
-                    bool flag = true;
-                    uint64_t x = *(begin + tk) << l_move >> r_move;
-                    while (atomicCas(begin + ctd[tid][x], empty, *(begin + tk + 1) ^ empty)
-                    {
-//!Note since const ptr == 2, the for loop is removed
-                        *(begin + ctd[tid][x] + 1) = *(begin + tk + 1);
-                    
-                    
-                        unsigned thd_num = (ctd[tid][x] < thd_n1)?ctd[tid][x]/(size + 1):(ctd[tid][x] - thd_n1) / size + thd1;
-                        atomicAdd(ctd[tid][x], ptr);
-                        x = *(begin + tk) << (l_move - p_bit)>> r_move;
-                        if (thd_num == threads - 1)
-                            atomicAdd(next[tid][0][x + 1], ptr);
-                        else
-                            atomicAdd(next[tid][thd_num + 1][x], ptr);
-                        tid = thd_num;
-                        tk = ctd[tid][x];
-                        x = *(begin + tk) << l_move >> r_move;
-                    }
-                    *(begin + ctd[tid][x]) = *(begin + tk + 1);
-                    *(begin + ctd[tid][x] + 1) = *(begin + tk + 1);
-                }
-            }
-        }
-        if (j < l - 1)
-        {       
-                    #pragma omp parallel for
-                for (unsigned k=0; k < threads; k++)
-                {
-                    //std::fill(ctd[k].begin(), ctd[k].end(), 0);
-                    for (unsigned n = 0; n < PBit; n++)
-                    {
-                        ctd[k][n] = 0;
-                        //ctd[n][k] = 0;
-                        for (unsigned m = 0; m < threads; m++)
-                        {
-                            ctd[k][n] += next[m][k][n];
-                            //ctd[n][k] += next[m][k][n];
-                            next[m][k][n] = 0;
-                        }   
-                    }
-                        
-                }
-        }
-    }
-
-    return true;
-}
-*/
-
 /*
- * Interface to sort x
+ * wrapper of sort x
  */
 template <typename TIt>
 inline bool _hsSortX(TIt const & begin, TIt const & end, unsigned const & xValBitLen, unsigned threads)
@@ -1942,7 +1451,6 @@ bool _createHsArray(StringSet<String<Dna5> > const & seq, String<uint64_t> & hs,
 
 /*
  * parallel creat hash array
- 
 template <unsigned SHAPELEN>
 bool _createHsArray(StringSet<String<Dna5> > const & seq, String<uint64_t> & hs, Shape<Dna5, Minimizer<SHAPELEN> > & shape, unsigned & threads)
 {
@@ -2184,7 +1692,7 @@ bool _createHsArray(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, Shap
  * parallel create hash array
  * creating index only collecting mini hash value [minindex]
  * genomes will be destroyed during the function to reduce memory consumption
- * state::debug
+ * status::debug
 template <unsigned SHAPELEN>
 bool _createHsArray2_MF(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, Shape<Dna5, Minimizer<SHAPELEN> > & shape, unsigned & threads)
 {
@@ -2295,9 +1803,9 @@ bool _createHsArray2_MF(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, 
 /*
  * parallel creat hash array
  * creating index only collecting mini hash value [minindex]
- * genomes will be detroyed during the functoin to reduce memory consumption
+ * genomes will be destructed in the functoin to reduce memory consumption
  * appendvalue instead of resize
- * state::debug succ for seq without 'N', seq containing 'N' not tested 
+ * status::debug succ for seq without 'N', seq containing 'N' not tested 
  */
 template <unsigned SHAPELEN>
 bool _createHsArray2_MF(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, Shape<Dna5, Minimizer<SHAPELEN> > & shape, unsigned & threads)
@@ -2787,149 +2295,6 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEmptyDir)
     return true;
 }
 
-
-/*
- * parallel sort ysa
-template <unsigned TSPAN, unsigned TWEIGHT>
-bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEmptyDir, unsigned threads)
-{
-
-    uint64_t k = _DefaultHs.getHeadPtr(hs[0]);
-    uint64_t preX = _DefaultHs.getHeadX(hs[0]);
-    uint64_t ptr = k;
-    uint64_t block_size = ptr;
-    uint64_t countMove = 0, prek = 0;
-    double time = sysTime();
-    uint64_t thd_countx = 0;
-
-    std::vector<uint64_t> thd_hsStart(threads + 1, 0);
-    while(_DefaultHs.getHeadPtr(hs[k]))
-    {
-        ptr = _DefaultHs.getHeadPtr(hs[k]);
-        if (preX != _DefaultHs.getHeadX(hs[k]))
-        {
-            
-            hs[k - countMove] = hs[k];
-            _DefaultHs.setHsHeadPtr(hs[prek], block_size);
-            prek = k - countMove;
-            block_size = ptr;
-            preX = _DefaultHs.getHeadX(hs[k]);
-        }
-        else
-        {
-            countMove++;
-            block_size += ptr - 1;
-        }
-        for (uint64_t j = k + 1; j < k + ptr; j++)
-        {
-            hs[j - countMove]= hs[j];       
-        }
-        ++thd_countx;
-        k += ptr;
-    }
-    _DefaultHs.setHsHeadPtr(hs[prek], block_size);
-    _DefaultHs.setHsHead(hs[k - countMove], 0, 0);
-    _DefaultHs.setHsHead(hs[k - countMove + 1], 0, 0);
-
-    thd_hsStart[threads] = prek + 1;
-    resize(hs, k + 2 - countMove);
-    //shrinkToFit(hs);
-    indexEmptyDir = k - countMove;
-    k=0;
-    preX = _DefaultHs.getHeadX(hs[0]);
-    ptr = 0;
-    block_size = 0;
-
-    std::cerr << "      preprocess sort y " << sysTime() - time << std::endl;
-    time = sysTime();
-#pragma omp parallel
-{
-    uint64_t ptr = 0;
-    #pragma omp for
-    for (uint64_t k = 0; k < length(hs) - 2; k++)
-    { 
-        if(_DefaultHs.isHead(hs[k]))
-        {
-            ptr = _DefaultHs.getHeadPtr(hs[k]);
-            _sort_YSA_Block(begin(hs) + k + 1, begin(hs) + k + ptr);
-        }   
-    }
-    
-}
-    std::cerr << "      sort y " << sysTime() - time << std::endl;
-
-    ptr = 0; k = 0;
-    uint64_t count = 0; 
-    
-    time = sysTime();
-    while(_DefaultHs.getHeadPtr(hs[k]))
-    {
-        ptr = _DefaultHs.getHeadPtr(hs[k]);
-        if (ptr < blocklimit)
-        {
-            ++count;
-        }
-        else
-        {   
-            for (unsigned j = k + 1; j < k + ptr; j++)
-            {
-                if(_DefaultHs.getHsBodyY(hs[j] ^ hs[j - 1]))
-                {
-                    ++count;
-                }
-            }
-            ++count;
-        }
-        k += ptr;
-    }
-    xstr._fullSize(count);
-    ptr = 0; k = 0;
-    std::cerr << "      preprocess2 resize xstr " << sysTime() - time << std::endl;
-    time = sysTime();
-
-#pragma omp parallel 
-{
-    //uint64_t thd_id = omp_get_thread_num();
-    uint64_t ptr = 0;
-
-#pragma omp for 
-    for (uint64_t m = 0; m < length(hs); m++)
-    {
-
-        if (_DefaultHs.isHead(hs[m]) && _DefaultHs.getHeadPtr(hs[m]))
-        {
-            ptr = _DefaultHs.getHeadPtr(hs[m]);
-            if (ptr < blocklimit)
-           {
-               requestXNode_noCollision_Atomic(xstr, _DefaultHs.getHeadX(hs[m]), 
-                       m + 1, _DefaultXNodeBase.xHead, _DefaultXNodeBase.returnDir);
-           }
-            else
-            {
-                uint64_t xval = _DefaultHs.getHeadX(hs[m]);
-                requestXNode_noCollision_Atomic(xstr, xval, 
-                        ~1, _DefaultXNodeBase.virtualHead, _DefaultXNodeBase.returnDir);
-                for (unsigned j = m + 1; j < m + ptr; j++)
-                {
-                    if(_DefaultHs.getHsBodyY(hs[j] ^ hs[j - 1]))
-                    {
-                        requestXNode_noCollision_Atomic(xstr, (xval + ((hs[j] & ((1ULL<<61) - (1ULL<<41))) >>1)), 
-                                j, _DefaultXNodeBase.xHead, _DefaultXNodeBase.returnDir);
-                    }
-                    
-                }
-            }
-            m += ptr - 1;    
-            
-        }
-    }
-}
-    std::cerr << "      request dir " << sysTime() - time << std::endl;
-    (void) threads;
-    return true;
-}
-*/
-
 /*
  * parallel sort ysa
  * this function is for index only collecting minihash value [minindex]
@@ -2955,7 +2320,6 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEmptyDir,
             
             hs[k - countMove] = hs[k];
             _DefaultHs.setHsHeadPtr(hs[prek], block_size);
-            //printf("[debug]::block %d\n", block_size);
             prek = k - countMove;
             block_size = ptr;
             preX = _DefaultHs.getHeadX(hs[k]);
@@ -3055,7 +2419,6 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEmptyDir,
             else
             {
                 uint64_t xval = _DefaultHs.getHeadX(hs[m]);
-                //printf ("[debug]::hash %" PRIu64 " %d\n", xval, ptr);
                 
                 requestXNode_noCollision(xstr, xval, 
                     ~1, _DefaultXNodeBase.virtualHead, _DefaultXNodeBase.returnDir);
@@ -3124,17 +2487,8 @@ String<uint64_t> & hs,  Shape<Dna5, Minimizer<SHAPELEN> > & shape, uint64_t & in
 template <typename TDna, unsigned span>
 bool createHIndex(StringSet<String<TDna> > & seq, HIndex<span> & index, unsigned & threads, bool efficient)
 {
-  //  if (threads > 1)
-  //  {
-        return _createQGramIndexDirSA_parallel(seq, index.xstr, index.ysa, index.shape, index.emptyDir, threads, efficient);
-  //  }
-  //  else 
-  //  {
-   //     return _createQGramIndexDirSA(seq, index.xstr, index.ysa, index.shape, index.emptyDir);
-   // }
-        
+    return _createQGramIndexDirSA_parallel(seq, index.xstr, index.ysa, index.shape, index.emptyDir, threads, efficient);
 }
-
 
 template <typename TDna, unsigned TSpan>
 bool _createQGramIndex(HIndex<TSpan> & index, StringSet<String<TDna> > & seq, unsigned threads = 1)
