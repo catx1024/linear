@@ -128,6 +128,7 @@ int align2cigar(Align<String<Dna5>,ArrayGaps> & align,
                  std::string & mutations)
 {
     align2cigar_(align, cigar, mutations);
+    return 0;
 }
 void align2cigar_(String<CigarElement< > > &cigar,
         Row<Align<String<Dna5>,ArrayGaps> >::Type &gaps1,
