@@ -7,7 +7,7 @@ struct GNodeBase
     const uint64_t xmask;
     const uint64_t smask;
     const uint64_t cmask;
-
+    
     GNodeBase():
         xBitLen(32),
         sBitLen(1),

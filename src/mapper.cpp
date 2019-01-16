@@ -99,28 +99,27 @@ void Mapper<TDna, TSpec>::printCords()
     std::cerr << ">Write results to disk        " << count << std::endl;
     std::cerr << "    End writing results. Time[s]" << sysTime() - time << std::endl;
 }
-int print_align_sam_header_ (StringSet<CharString> & genomesId,
+void print_align_sam_header_ (StringSet<CharString> & genomesId,
                              StringSet<String<Dna5> > & genomes,
                              std::ofstream & of
                             )
 {
     of << "@HD\tVN:1.6\n";
-    for (int k = 0; k < length(genomesId); k++)
+    for (int k = 0; k < (int)length(genomesId); k++)
     {
         of << "@SQ\tSN:" << genomesId[k] << "\tLN:" << length(genomes[k]) << "\n";
     }
     of << "@PG\tPN:" << "Linear\n";
 }
-int print_align_sam_record_(StringSet<String< BamAlignmentRecord > > & records, 
-                     StringSet<String<uint64_t> > & cordSet,
+void print_align_sam_record_(StringSet<String< BamAlignmentRecord > > & records, 
                      StringSet<CharString> & readsId, 
                      StringSet<CharString> & genomesId,
                      std::ofstream & of
                     )
 {
-    for (int i = 0; i < length(records); i++)
+    for (int i = 0; i < (int)length(records); i++)
     {
-        for (int j = 0; j < length(records[i]); j++)
+        for (int j = 0; j < (int)length(records[i]); j++)
         {
             records[i][j].qName = readsId[i];
             CharString g_id = genomesId[records[i][j].rID];
@@ -129,7 +128,7 @@ int print_align_sam_record_(StringSet<String< BamAlignmentRecord > > & records,
     }
 }
 template <typename TDna, typename TSpec>
-int print_align_sam (Mapper<TDna, TSpec> & mapper)
+void print_align_sam (Mapper<TDna, TSpec> & mapper)
 {
     std::string filePath = mapper.getOutputPrefix() + ".sam";
     mapper.getOf().open(toCString(filePath));
@@ -138,7 +137,6 @@ int print_align_sam (Mapper<TDna, TSpec> & mapper)
                             mapper.getOf()
                            );
     print_align_sam_record_(mapper.getBamRecords(),
-                            mapper.cords(),
                             mapper.readsId(),
                             mapper.genomesId(),
                             mapper.getOf()
@@ -287,7 +285,7 @@ int print_clip_gff_(StringSet<String<uint64_t> > & clips,
             for (unsigned j = 0; j < length(clips[i]); j++)
             {
                 uint64_t cord_x = _DefaultCord.getCordX(clips[i][j]);
-                uint64_t cord_y = _DefaultCord.getCordY(clips[i][j]);
+                //uint64_t cord_y = _DefaultCord.getCordY(clips[i][j]);
                 of << cord_x << " ";   
             }
             of << '\n';
@@ -365,7 +363,6 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
 {
   
     typedef typename PMRecord<TDna>::RecSeq Seq;
-    //double time=sysTime();
     float senThr = mapParm.senThr / window_size;
     float cordThr = mapParm.cordThr / window_size;
     MapParm complexParm = mapParm;
@@ -375,18 +372,16 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
     String<uint64_t> red_len;
     resize (gap_len, threads);
     resize (red_len, threads);
-    for (int i = 0; i < length(gap_len); i++)
-{
-    gap_len[i]  = 0;
-    red_len[i] = 0;
-}
-    //double time2 = sysTime();
+    for (int i = 0; i < (int)length(gap_len); i++)
+    {
+        gap_len[i]  = 0;
+        red_len[i] = 0;
+    }
 #pragma omp parallel
 {
     unsigned size2 = length(reads) / threads;
     unsigned ChunkSize = size2;
     Seq comStr;
-    //Anchors anchors(Const_::_LLTMax, AnchorBase::size);
     Anchors anchors;
     typename PMRes::HitString crhit;
     StringSet<String<uint64_t> >  cordsTmp;
@@ -448,11 +443,6 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
         }
     
 }
-for (int k = 0; k < length(gap_len); k++)
-{
-    std::cout << "[] gap len " << gap_len[k] << " " << red_len[k] << " " << float(gap_len[k]) / red_len[k] << "\n";
-}
-    //std::cerr << "    End raw mapping. Time[s]: " << sysTime() - time << std::flush << std::endl;
     return 0;
 }
 
