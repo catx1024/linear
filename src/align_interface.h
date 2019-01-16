@@ -83,9 +83,9 @@ void printAlign_(Align<String<Dna5>, ArrayGaps> & aligner, int row_i, int row_j)
                appendValue(tmpc, tmp - tmp / 10 * 10 + '0');
                tmp /= 10;
             }
-            for (int j = 0; j < length(tmpc); j++)
+            for (int j = 0; j < (int)length(tmpc); j++)
             {
-                line4[count + length(tmpc) - 1 - j] = tmpc[j];
+                line4[count + (int)length(tmpc) - 1 - j] = tmpc[j];
             }
             sourceP2 += len0;
             viewP2 = toViewPosition(row2, sourceP2 - 1);
@@ -101,7 +101,7 @@ void printAlign_(Align<String<Dna5>, ArrayGaps> & aligner, int row_i, int row_j)
         {
             line3[count] = ' ';
         }
-        if (count == line_len - 1 || i + 1== length(row1))
+        if (count == line_len - 1 || i + 1 == (int)length(row1))
         {
             std::cout << "     " << line0 << "\n     " << line1 << "\n     " << line3 << "\n     " << line2 << "\n     " << line4 << "\n";
             for (int j = 0; j < (int)length(line0); j++)
@@ -124,73 +124,6 @@ void printAlign_(Align<String<Dna5>, ArrayGaps> & aligner, int row_i, int row_j)
 void printAlignment(Align<String<Dna5>, ArrayGaps> & aligner)
 {
 	printAlign_(aligner, 0, 1);
-}
-int align_mergeCords_band (String<uint64_t> & cords,
-                           String<uint64_t> & bands,
-                           int band_width = 90,
-                           int band_width_max_rate = 0.1
-                          )
-{
-    int flag = 1;
-    int64_t upper_band = -(1ULL << 62);
-  	int64_t lower_band = 1ULL << 62;
-  	std::cout << "uband " << upper_band << " " << lower_band << "\n";
-  	int64_t xy_upper_band, xy_lower_band;
-  	int64_t prexuband, prexlband;
-    uint64_t x_start = _getSA_i2(_DefaultCord.getCordX(cords[1]));
-    uint64_t y_start = _DefaultCord.getCordY(cords[1]);
-    clear(bands);
-
-    for (int i = 1; i < length(cords); i++)
-    {
-        int64_t tmp_upper_band;
-        int64_t tmp_lower_band;
-        int64_t x1 = _getSA_i2(_DefaultCord.getCordX(cords[i])); 
-        int64_t y1 = _DefaultCord.getCordY(cords[i]); 
-        xy_upper_band = x1 - y1 + band_width;
-        xy_lower_band = x1 - y1 - band_width;
-        tmp_upper_band = std::max(xy_upper_band, upper_band);
-        tmp_lower_band = std::min(xy_lower_band, lower_band);
-        //int band_width_max = std::max(band_width * 2 + 1, int((y1 - y_start) * band_width_max_rate) * 2);
-        //band_width_max = std::min(band_width_max, int(window_size * 2));
-        int band_width_max = 400;
-        std::cout << " xxbands" << i << " " << xy_upper_band << " " << upper_band << " " << xy_lower_band << " " << lower_band << " " << " " << tmp_upper_band - tmp_lower_band << " " << band_width_max << "\n";
-        if (tmp_upper_band - tmp_lower_band < band_width_max) 
-        {
-            upper_band = tmp_upper_band;
-            lower_band = tmp_lower_band;
-        }
-        //else // clip the band to two discontinuous bands 
-        //{
-            uint64_t center_diagonal = lower_band + band_width;
-            //uint64_t x_start1 = 
-            std::cout << "[]::align_mergeCords_band1 " << y_start << " " << y1 << "\n";
-            /*
-            if (x_start - y_start - center_diagonal > 0)
-            {
-                
-            }
-            else
-            {
-                x1 - y1 - 
-            }
-            */
-            //appendValue(bands, start_cords);
-            //appendValue(bands, end_cords);
-        //}
-        std::cout << "[]::align_mergeCords_band2 " << lower_band << " " << upper_band << "\n";
-        if (_DefaultHit.isBlockEnd(cords[i]))
-        {
-        	upper_band = ~0;
-        	lower_band = 1 << 30;
-        	if (i < length(cords) - 1)
-        	{
-        		x_start = _getSA_i2(_DefaultCord.getCordX(cords[i]));
-        		y_start = _DefaultCord.getCordY(cords[i]);
-        	}
-        	std::cout << "xxxmerge " << i << "\n";
-        }
-    }
 }
 inline int align_block (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                         Row<Align<String<Dna5>, ArrayGaps> >::Type & row2,
@@ -223,7 +156,7 @@ inline int align_block (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     double t1 = sysTime();
     int score = globalAlignment(row1, row2, Score<int, Simple> (s1, s2, s3), AlignConfig<true, true, true, true>(), -band, band);
     std::cout << "align_time_block " << (sysTime() - t1) / (sysTime() - t) << "\n";
-    return 0; //score;
+    return score;
 }
 int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                 Row<Align<String<Dna5>, ArrayGaps> >::Type & row2,
@@ -240,8 +173,8 @@ int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     uint64_t readStart = _DefaultCord.getCordY(cord);
     uint64_t readEnd = readStart + block_size;
     uint64_t strand = _DefaultCord.getCordStrand (cord);
-    double time = sysTime();
-    align_block(row1, row2, genome, read, comrevRead, strand, genomeStart, genomeEnd, readStart, readEnd, band);
+    int score = align_block(row1, row2, genome, read, comrevRead, strand, genomeStart, genomeEnd, readStart, readEnd, band);
+    return score;
 }
 /**
  *  return score of two chars
@@ -477,25 +410,17 @@ int clipMerge_aligner(Row<Align<String<Dna5>,ArrayGaps> >::Type & row11,
         it1++; 
         it2++;
     }
-    for (int i = 0; i < std::min(length(align1), length(align2)); i++)
-    {
-        int x1 = (align1[i] >> bit & mask);
-        int y1 = (align1[i] & mask);
-        int x2 = (align2[i] >> bit & mask);
-        int y2 = (align2[i] & mask);
-    }
 
     int thd_merge_x = 2, thd_merge_y = 2;
     int flag = 0, start_j = 0;
     int x1 = (align1[0] >> bit) & mask;
     int y1 = align1[0] & mask;flag = 0;
-    int x1_next, y1_next;
-	for (int i = 0; i < length(align1) - 1; i++)	
+	for (unsigned i = 0; i < length(align1) - 1; i++)	
 	{
 		int64_t x1_next = (align1[i + 1] >> bit) & mask;
 		int64_t y1_next = align1[i + 1] & mask;
         flag = 0;
-		for (int j = start_j; j < length(align2); j++)	
+		for (unsigned j = start_j; j < length(align2); j++)	
 		{
 			int64_t x2 = align2[j] >> bit & mask;
 			int64_t y2 = align2[j] & mask;
@@ -527,10 +452,7 @@ int clipMerge_aligner(Row<Align<String<Dna5>,ArrayGaps> >::Type & row11,
 	}
     return 1;
 }
-void clipCigar(String<CigarElement<> > & cigar)
-{
 
-}
 /*
  * Align cords and output cigar string.
  * Each cord will be clipped if necessary. 
@@ -563,14 +485,14 @@ int align_cords (StringSet<String<Dna5> >& genomes,
         strand = _DefaultCord.getCordStrand(cords[i]);
         t1 = sysTime();
         align_cord (row(aligner, ri), row(aligner, ri + 1), 
-                    genomes[g_id], read, comrevRead, cords[i]);
+                    genomes[g_id], read, comrevRead, cords[i], block_size, band);
         t2 += sysTime() - t1;
         clip_head_ (row(aligner, ri), row(aligner, ri + 1), head_end);
         clip_tail_ (row(aligner, ri), row(aligner, ri + 1), tail_start);
         if (!_DefaultCord.getCordStrand(cords[i - 1] ^ cords[i]) && 
             !_DefaultHit.isBlockEnd(cords[i - 1]))
         {
-            int flag = clipMerge_aligner(
+            clipMerge_aligner(
                               row(aligner, ri_pre), 
                               row(aligner, ri_pre + 1),
                               row(aligner, ri),
@@ -655,7 +577,6 @@ int clip_window_(Align<String<Dna5>,ArrayGaps> & aligner,
         appendValue(buffer, x);
     }
     t = sysTime() - t;
-    double t2 = sysTime();
     int max = 0;
     int max_sp_ref = 0; // max source position
     int max_sp_read = 0;
@@ -697,7 +618,7 @@ inline uint64_t clip_window (String<Dna5> & genome,
     resize(rows(aligner), 2); 
     TRow row1 = row(aligner, 0);
     TRow row2 = row(aligner, 1);
-    for (int i = genomeStart; i < genomeEnd; i++)
+    for (unsigned i = genomeStart; i < genomeEnd; i++)
     {
         std::cout << *(begin(genome) + i);
     }

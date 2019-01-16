@@ -648,8 +648,10 @@ inline uint64_t g_hs_anchor_2Tile (uint64_t & anchor, uint64_t & main_strand, ui
     //uint64_t y = (main_strand ^ strand) * revscomp_const - _nStrand(main_strand ^ strand) * g_hs_anchor_getY (anchor);
     /**
      * The cord of read read (y) is shown in its own direction.
-     * easy for following processing (align)
+     * easier for downstream process (align)
      */
+    (void) main_strand;
+    (void) revscomp_const;
     uint64_t y = g_hs_anchor_getY(anchor);
     //std::cerr << "[]::y " << strand <<  " " << g_hs_anchor_getY(anchor) << "\n";
 	return (((anchor + ((anchor & g_hs_anchor_mask1) << 20)) & g_hs_anchor_mask2) & g_hs_anchor_mask1_) + y + (strand << 61);
@@ -664,78 +666,7 @@ inline int64_t tile_distance_y (uint64_t tile1, uint64_t tile2)
 {
     return (int64_t)(_defaultTile.getY(tile2)) - (int64_t)(_defaultTile.getY(tile1));
 }
-/**
- * debug utility
- */
-int _fscore (String<Dna5> & seq, String<Dna5> read, uint64_t gstart, uint64_t rstart)
-{
-    String<int> gfs;
-    String<int> rfs;
-    resize (gfs, 4);
-    resize (rfs, 4);
-    for (int i = 0; i < 4; i++)
-    {
-        gfs[i] = 0;
-        rfs[i] = 0;
-    }
-    int fsc = 0;
-    int script_len = 32;
-    int delta = 100;
-    for (delta; delta < 10000; delta+=32)
-    {
-        for (int d2 = 16; d2 < 5000; d2 += 10)
-        {
-            fsc = 0;
-            for (int i = 0; i < window_size / script_len ; i++)
-            {
-                for (int j = 0; j < script_len; j++)
-                {
-                    gfs[ordValue(*(begin(seq) + gstart + i * script_len + j + delta))]++;
-                    rfs[ordValue(*(begin(read) + rstart + i * script_len + j))]++;   
-                }
-                for (int j = 0; j < 4; j++)
-                {
-                    fsc += std::abs(gfs[j] - rfs[j]);
-                    gfs[j] = rfs[j] = 0;
-                }   
-            
-            }   
-            std::cout << "[]::_fscore " << fsc << "\n";   
-        }
-        
-    }
-    return fsc;
-}
 
-/**
- * debug utility 
- */
-int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
-{
-    for (uint64_t k = 1; k < length(tiles); k++)
-    {
-        if (_defaultTile.getX(tiles[k] - tiles[k - 1]) > window_size)
-        {
-            return 1;
-        }
-    }
-    
-    if (length(tiles) > 0)
-    {
-        if (_defaultTile.getX(tiles[0]) -  g_start > window_size )//|| g_end - _defaultTile.getX(tiles[length(tiles) - 1]) > window_size)
-        {
-            return 1;
-        }   
-    }
-    else 
-    {
-        if (g_end - g_start > window_size)
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
 /*
  * collecting minimizer
  *
@@ -923,8 +854,7 @@ inline void g_mapHs_anchor_ (String<uint64_t> & anchor,
     int64_t prek = 0;
     int64_t prex = -1;
     int64_t prey = -1; 
-    int anchor_len = 0, max_anchor_len = 0, max_prek = 0, max_k = 0;
-    int thd_k_in_window = 1;
+    int anchor_len = 0;
     float thd_error_percent = 0.6;
     std::sort (begin(anchor), begin(anchor) + anchor_end);
     anchor[anchor_end] = ~0;
@@ -946,8 +876,8 @@ inline void g_mapHs_anchor_ (String<uint64_t> & anchor,
                 for (int j = prek + 1; j < k; j++)
                 {
                 //TODO: change for invs, y is in descending order 
-                    if ((g_hs_anchor_getX(anchor[j]) > prex + thd_tileSize
-                        || g_hs_anchor_getY(anchor[j]) > prey + thd_tileSize))
+                    if ((int64_t)g_hs_anchor_getX(anchor[j]) > prex + thd_tileSize
+                     || (int64_t)g_hs_anchor_getY(anchor[j]) > prey + thd_tileSize)
                     {
                         prex = g_hs_anchor_getX(anchor[j - 1]);
                         prey = g_hs_anchor_getY(anchor[j - 1]);
@@ -972,9 +902,6 @@ inline void g_mapHs_anchor_ (String<uint64_t> & anchor,
                    return _defaultTile.getX(s1) < _defaultTile.getX(s2);
                 });
 }
-
-
-
 /**
  * cluster all anchors and trim tiles for sv
  * Will conduct additional processing. 
@@ -1005,15 +932,14 @@ inline void g_mapHs_anchor_sv1_ (String<uint64_t> & anchor,
     int thd_fscore = 45;
     float thd_overlap_tile = thd_tileSize * 0.4;
     float thd_error_percent = 0.6;
-    float thd_swap_tile = thd_tileSize * 0.05;
-    
+ 
     /**
      * cluster anchors
      */
     int64_t prek = 0;
     int64_t prex = -1;
     int64_t prey = -1; 
-    int anchor_len = 0, max_anchor_len = 0, max_prek = 0, max_k = 0;
+    int anchor_len = 0, max_prek = 0, max_k = 0;
     std::sort (begin(anchor), begin(anchor) + anchor_end);
     anchor[anchor_end] = ~0;
     String<int> score;
@@ -1042,8 +968,8 @@ inline void g_mapHs_anchor_sv1_ (String<uint64_t> & anchor,
                 }
                 for (int j = prek + 1; j < k; j++)
                 {
-                    if ((g_hs_anchor_getX(anchor[j]) > prex + thd_tileSize
-                        || g_hs_anchor_getY(anchor[j]) > prey + thd_tileSize))
+                    if ((int64_t)g_hs_anchor_getX(anchor[j]) > prex + thd_tileSize
+                     || (int64_t)g_hs_anchor_getY(anchor[j]) > prey + thd_tileSize)
                     {
                         prex = g_hs_anchor_getX(anchor[j - 1]);
                         prey = g_hs_anchor_getY(anchor[j - 1]);
@@ -1073,7 +999,7 @@ inline void g_mapHs_anchor_sv1_ (String<uint64_t> & anchor,
      */
     float tz = thd_tileSize / 2;
     int prep = 0;
-    for (int i = 0; i < length(score); i++)
+    for (unsigned i = 0; i < length(score); i++)
     {
         
         if (score[i] < thd_k_in_window) 
@@ -1084,7 +1010,7 @@ inline void g_mapHs_anchor_sv1_ (String<uint64_t> & anchor,
         {
             uint64_t tile_x = _defaultTile.getX(tiles[i]);
             uint64_t tile_y = _defaultTile.getY(tiles[i]);
-            unsigned fscore = _windowDist(begin(f1[_defaultTile.getStrand(tiles[i])]) + _DefaultCord.cord2Cell(tile_y), 
+            int fscore = _windowDist(begin(f1[_defaultTile.getStrand(tiles[i])]) + _DefaultCord.cord2Cell(tile_y), 
                                         begin(f2[_getSA_i1(tile_x)]) + _DefaultCord.cord2Cell(_getSA_i2(tile_x)));
             //if (fscore < windowThreshold)
             if (fscore < thd_fscore)
@@ -1173,7 +1099,7 @@ inline void g_mapHs_anchor_sv1_ (String<uint64_t> & anchor,
      * ATTENTION: relation between y1 and y2 currently are not considered.
      */
     //extend the middle tiles
-    for (int i = 1; i < length(tiles); i++)
+    for (int i = 1; i < (int)length(tiles); i++)
     {
         i += extendPatch(f1, f2, tiles, i, tiles[i - 1], tiles[i], revscomp_const);   
     }

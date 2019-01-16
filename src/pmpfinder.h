@@ -974,12 +974,14 @@ inline unsigned getIndexMatchAll(typename PMCore<TDna, TSpec>::Index & index,
             {
                 xpre = shape.XValue;
                 uint64_t pos = getXDir(index, shape.XValue, shape.YValue);
-//!Note: The contition is different from single strand \
-         which will slightly changes the senstivity.\
-         Specifically, in the single strand index, if the size of the block is > mapParm.delta, \
-         then the block of the ysa will not be used. \
-         While in double strand index, the length of ysa of fixed value includes kmer \
-         of f both + and - strands.
+//!Note: The contition is different from single strand 
+//       which will slightly changes the senstivity.
+//       Specifically, in the case of the index for single strand, 
+//       if the size of the block is > mapParm.delta,
+//       then the block of the ysa will not be used. 
+//       While for double strand index 
+//       the length of ysa of fixed value includes 
+//       kmer of both + and - strands.
 
         // if (_DefaultHs.getHsBodyY(index.ysa[std::min(pos + mapParm.delta, length(index.ysa) - 1)]) ^ shape.YValue)
             //{
