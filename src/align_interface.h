@@ -22,6 +22,7 @@ int inline setBamRecord (BamAlignmentRecord & bam_record,
     align2cigar(bam_record.cigar, row1, row2);
     bam_record.rID = g_id;
     bam_record.beginPos = g_beginPos; 
+    return 0;
 }
 /**
  * debug utility
@@ -44,15 +45,15 @@ void printAlign_(Align<String<Dna5>, ArrayGaps> & aligner, int row_i, int row_j)
     resize(line2, line_len);
     resize(line3, line_len);
     resize(line4, line_len * 2);
-    for (int j = 0; j < length(line0); j++)
+    for (int j = 0; j < (int)length(line0); j++)
     {
         line0[j] = ' ';
     } 
-    for (int j = 0; j < length(line0); j++)
+    for (int j = 0; j < (int)length(line0); j++)
     {
         line4[j] = ' ';
     }
-    for (int i = clippedBeginPosition(row1); i < clippedEndPosition(row1); i++)
+    for (int i = (int)clippedBeginPosition(row1); i < (int)clippedEndPosition(row1); i++)
     {
         int count = i % line_len;
         if (i == viewP)
@@ -64,7 +65,7 @@ void printAlign_(Align<String<Dna5>, ArrayGaps> & aligner, int row_i, int row_j)
                appendValue(tmpc, tmp - tmp / 10 * 10 + '0');
                tmp /= 10;
             }
-            for (int j = 0; j < length(tmpc); j++)
+            for (int j = 0; j < (int)length(tmpc); j++)
             {
                 line0[count + length(tmpc) - 1 - j] = tmpc[j];
             //    std::cerr << line0[count + length(tmpc) - 1 - j];
@@ -103,17 +104,17 @@ void printAlign_(Align<String<Dna5>, ArrayGaps> & aligner, int row_i, int row_j)
         if (count == line_len - 1 || i + 1== length(row1))
         {
             std::cout << "     " << line0 << "\n     " << line1 << "\n     " << line3 << "\n     " << line2 << "\n     " << line4 << "\n";
-            for (int j = 0; j < length(line0); j++)
+            for (int j = 0; j < (int)length(line0); j++)
             {
                 line0[j] = ' ';
             }
-			for (int j = 0; j < length(line1); j++)
+			for (int j = 0; j < (int)length(line1); j++)
             {
                 line1[j] = ' ';
                 line2[j] = ' ';
                 line3[j] = ' ';
             }
-            for (int j = 0; j < length(line4); j++)
+            for (int j = 0; j < (int)length(line4); j++)
             {
                 line4[j] = ' ';
             }
