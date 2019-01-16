@@ -99,42 +99,53 @@ void Mapper<TDna, TSpec>::printCords()
     std::cerr << ">Write results to disk        " << count << std::endl;
     std::cerr << "    End writing results. Time[s]" << sysTime() - time << std::endl;
 }
-int print_align_sam_(StringSet<String<String<CigarElement<> > > > & cigars, 
+int print_align_sam_header_ (StringSet<CharString> & genomesId,
+                             StringSet<String<Dna5> > & genomes,
+                             std::ofstream & of
+                            )
+{
+    of << "@HD\tVN:1.6\n";
+    for (int k = 0; k < length(genomesId); k++)
+    {
+        of << "@SQ\tSN:" << genomesId[k] << "\tLN:" << length(genomes[k]) << "\n";
+    }
+    of << "@PG\tPN:" << "Linear\n";
+}
+int print_align_sam_record_(StringSet<String< BamAlignmentRecord > > & records, 
                      StringSet<String<uint64_t> > & cordSet,
                      StringSet<CharString> & readsId, 
                      StringSet<CharString> & genomesId,
-                     std::ofstream & of,
-                     std::string outputPrefix)
+                     std::ofstream & of
+                    )
 {
-    std::string filePath = outputPrefix + ".sam";
-    of.open(toCString(filePath));
-    BamFileOut bamFileOut(of, Sam());
-    BamAlignmentRecord record;
-    for (int i = 0; i < length(cigars); i++)
+    for (int i = 0; i < length(records); i++)
     {
-        record.qName = readsId[i];
-        //record.rID = _getSA_i2(_DefaultCord.getCordX(cordSet[i]));
-        for (int j = 0; j < length(cigars[i]); j++)
+        for (int j = 0; j < length(records[i]); j++)
         {
-            record.cigar = cigars[i][j]; 
-            writeRecord(bamFileOut, record);
+            records[i][j].qName = readsId[i];
+            CharString g_id = genomesId[records[i][j].rID];
+            writeSam(of, records[i][j], g_id);
         }
     }
-    of.close();
 }
 template <typename TDna, typename TSpec>
-int print_align_sam(Mapper<TDna, TSpec> & mapper)
+int print_align_sam (Mapper<TDna, TSpec> & mapper)
 {
-    print_align_sam_(mapper.getCigars(),
-                     mapper.cords(),
-                     mapper.readsId(),
-                     mapper.genomesId(),
-                     mapper.getOf(),
-                     mapper.getOutputPrefix());
+    std::string filePath = mapper.getOutputPrefix() + ".sam";
+    mapper.getOf().open(toCString(filePath));
+    print_align_sam_header_(mapper.genomesId(), 
+                            mapper.genomes(),
+                            mapper.getOf()
+                           );
+    print_align_sam_record_(mapper.getBamRecords(),
+                            mapper.cords(),
+                            mapper.readsId(),
+                            mapper.genomesId(),
+                            mapper.getOf()
+                           ); 
+    mapper.getOf().close();
 }
-/*
- * print the cords without detailes 
- */
+
 template <typename TDna, typename TSpec>
 void Mapper<TDna, TSpec>::printCordsRaw()
 {
@@ -152,25 +163,20 @@ void Mapper<TDna, TSpec>::printCordsRaw()
             {
                 if (_DefaultHit.isBlockEnd(cordSet[k][j-1]) )//&& ++recordCount < 10)
                 {
-                    //of << record.id1[k] << " " << length(cordSet[k]) << " "
                     of <<"@S1_"<< k+1 << " " << length(reads()[k]) << " "
                     << _DefaultCord.getCordY(cordSet[k][j]) << " " << length(cordSet[k]) << " x " 
                     << _getSA_i1(_DefaultCord.getCordX(cordSet[k][j])) << " " << cordCount << " "
                     << _getSA_i2(_DefaultCord.getCordX(cordSet[k][j]))  << " " 
-                    //<< cordSet[k][j] 
                     << "\n";   
-                    //flag = false;
                     cordCount = 0;
                 }
                 cordCount++;
             }
-            //_DefaultCord.print(cordSet[k],of);
         }
     }
     std::cerr << ">Write results to disk          " << std::endl;
     std::cerr << "    End writing results. Time[s]" << sysTime() - time << std::endl; 
 }
-
 /**
  * print all cords with cordinates
  */
@@ -352,7 +358,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
                    StringSet<String<uint64_t> > & cords,
                    StringSet<String<uint64_t> > & clips,
                    StringSet<String<TDna> > & seqs,
-                   StringSet<String<String<CigarElement< > > > >& cigars,
+                   StringSet<String<BamAlignmentRecord> >& bam_records,
                    unsigned & threads,
                    int p1
                   )
@@ -386,7 +392,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
     StringSet<String<uint64_t> >  cordsTmp;
     StringSet< String<short> > f1;
     StringSet<String<uint64_t> > clipsTmp;
-    StringSet<String<String<CigarElement<> > > > cigarsTmp;
+    StringSet<String<BamAlignmentRecord> > bam_records_tmp;
     unsigned thd_id =  omp_get_thread_num();
     if (thd_id < length(reads) - size2 * threads)
     {
@@ -394,7 +400,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
     }
     resize(cordsTmp, ChunkSize);
     resize(clipsTmp, ChunkSize);
-    resize(cigarsTmp, ChunkSize);
+    resize(bam_records_tmp, ChunkSize);
     resize(f1, 2);
     unsigned c = 0;
     
@@ -428,7 +434,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
                 path_dst(begin(crhit), end(crhit), f1, f2, cordsTmp[c], cordLenThr);
             }   
             gap_len[thd_id] += mapGaps(seqs, reads[j], comStr, cordsTmp[c], g_hs, g_anchor, clipsTmp[c], f1, f2, 300, 192, p1);
-            align_cords(seqs, reads[j], comStr, cordsTmp[c], cigarsTmp[c]);
+            align_cords(seqs, reads[j], comStr, cordsTmp[c], bam_records_tmp[c]);
         }   
         c += 1;
     } 
@@ -438,7 +444,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
         {
             append(cords, cordsTmp);
             append(clips, clipsTmp);
-            append(cigars, cigarsTmp);
+            append(bam_records, bam_records_tmp);
         }
     
 }
@@ -485,7 +491,7 @@ int map(Mapper<TDna, TSpec> & mapper, int p1)
                                     mapper.cords(), 
                                     mapper.getClips(),
                                     mapper.genomes(),
-                                    mapper.getCigars(),
+                                    mapper.getBamRecords(),
                                     mapper.thread(), 
                                     p1
                                    );

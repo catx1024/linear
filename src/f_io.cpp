@@ -49,87 +49,6 @@ std::string & operator<< (std::string & s, std::string s2)
     return s;
 }
 
-
-int align2cigar_(Align<String<Dna5>,ArrayGaps> & align, 
-                 std::string & cigar, 
-                 std::string & mutations)
-                 //int source_start = 0; 
-                 //int source_end = toSourcePosition(length(row(align, 0))))
-{
-
-    typedef Align<String<Dna5>, ArrayGaps> TAlign;
-    typedef typename Source<TAlign>::Type TSource;
-    typedef typename Iterator<TSource, Rooted>::Type TStringIterator;
-
-    typedef typename Row<TAlign>::Type TRow;
-    typedef typename Iterator<TRow, Rooted>::Type TAlignIterator;
-
-    TAlignIterator ali_it0_stop = iter(row(align, 0), endPosition(cols(align)));
-    TAlignIterator ali_it1_stop = iter(row(align, 1), endPosition(cols(align)));
-    TAlignIterator ali_it0 = iter(row(align, 0), beginPosition(cols(align)));
-    TAlignIterator ali_it1 = iter(row(align, 1), beginPosition(cols(align)));
-    TStringIterator readBase = begin(source(row(align, 0)));
-    
-    int readPos = 0; 
-    bool first = true;
-    while (ali_it0 != ali_it0_stop && ali_it1 != ali_it1_stop)
-    {    
-        int matched = 0; 
-        int inserted = 0; 
-        int deleted = 0; 
-        while (ali_it0 != ali_it0_stop && ali_it1 != ali_it1_stop && !isGap(ali_it0) && !isGap(ali_it1))
-        {
-            ++readPos;
-            if (*ali_it1 != *ali_it0)
-            {
-                if (first)
-                    first = false;
-                else
-                    mutations << ",";
-                mutations << readPos << (char)*readBase;
-            }
-            ++readBase;
-            ++ali_it0;
-            ++ali_it1;
-            ++matched;
-        }
-        if (matched > 0)
-        {std::to_string(matched);
-            cigar << matched << "M";
-        }
-        while (ali_it0 != ali_it0_stop && isGap(ali_it0))
-        {
-            ++ali_it0;
-            ++ali_it1;
-            ++deleted;
-        }
-        if (deleted > 0)
-            cigar << deleted << "D";
-        while (isGap(ali_it1) && ali_it1 != ali_it1_stop)
-        {
-            ++ali_it0;
-            ++ali_it1;
-            ++readPos;
-            if (first)
-                first = false;
-            else
-                mutations << ",";
-            mutations << readPos << (char)*readBase;
-            ++readBase;
-            ++inserted;
-        }
-        if (inserted > 0)
-            cigar << inserted << "I";
-    }
-    return 0;
-}
-int align2cigar(Align<String<Dna5>,ArrayGaps> & align, 
-                 std::string & cigar, 
-                 std::string & mutations)
-{
-    align2cigar_(align, cigar, mutations);
-    return 0;
-}
 void align2cigar_(String<CigarElement< > > &cigar,
         Row<Align<String<Dna5>,ArrayGaps> >::Type &gaps1,
         Row<Align<String<Dna5>,ArrayGaps> >::Type &gaps2,
@@ -164,7 +83,7 @@ void align2cigar_(String<CigarElement< > > &cigar,
             else if (isClipped(it2))
                 op = 'S';
             else
-//                op = ((TVal1)*it1 == (TVal2)*it2)? '=': 'X';
+//                op = (*it1 == *it2)? '=': 'X';
                 op = 'M';
         }
         if (lastOp != op)
@@ -191,3 +110,82 @@ void align2cigar(String<CigarElement< > > &cigar,
 {
     align2cigar_(cigar, gaps1, gaps2, 1000);
 }
+
+//Lightweight sam function of Seqan::write(bamAlignmentRecord)
+void writeSam(std::ofstream & target,
+              BamAlignmentRecord const & record,
+              CharString genome_id,
+              CharString genome_id_next
+            )
+{
+    write(target, record.qName);
+    writeValue(target, '\t');
+
+    appendNumber(target, record.flag);
+    writeValue(target, '\t');
+
+    write(target, genome_id);
+
+    writeValue(target, '\t');
+
+    SEQAN_ASSERT_EQ((__int32)BamAlignmentRecord::INVALID_POS + 1, (__int32)0);
+    appendNumber(target, record.beginPos + 1);
+
+    writeValue(target, '\t');
+
+    appendNumber(target, static_cast<__uint16>(record.mapQ));
+    writeValue(target, '\t');
+
+    if (empty(record.cigar))
+        writeValue(target, '*');
+    else
+        for (unsigned i = 0; i < length(record.cigar); ++i)
+        {
+            appendNumber(target, record.cigar[i].count);
+            writeValue(target, record.cigar[i].operation);
+        }
+
+    writeValue(target, '\t');
+
+    if (record.rNextId == BamAlignmentRecord::INVALID_REFID)
+        writeValue(target, '*');
+    else if (record.rID == record.rNextId)
+        writeValue(target, '=');
+    else
+        write(target, genome_id_next);
+
+    writeValue(target, '\t');
+
+    appendNumber(target, record.pNext + 1);
+
+    writeValue(target, '\t');
+
+    if (record.tLen == BamAlignmentRecord::INVALID_LEN)
+        writeValue(target, '0');
+    else
+        appendNumber(target, record.tLen);
+
+    writeValue(target, '\t');
+
+    if (empty(record.seq))
+        writeValue(target, '*');  // Case of empty seq string / "*".
+    else
+        write(target, record.seq);
+
+    writeValue(target, '\t');
+
+
+    if (empty(record.qual))  // Case of empty quality string / "*".
+        writeValue(target, '*');
+    else
+        write(target, record.qual);
+
+    if (!empty(record.tags))
+    {
+        writeValue(target, '\t');
+        appendTagsBamToSam(target, record.tags);
+    }
+
+    writeValue(target, '\n');
+}
+
