@@ -558,8 +558,11 @@ namespace SEQAN_NAMESPACE_MAIN
                 itPrev = itDir;
                 *itDir = (index.sentinelBound - index.sentinelOcc) | orMask;    ++itDir;
                 *itDir = index.sentinelBound | index.UNEVALUATED;                ++itDir;
-            } else
+            } 
+            else
+            {
                 orMask |= index.LEAF;
+            }
                 for (TDirSize d = index.sentinelBound - index.sentinelOcc; d != index.sentinelBound; ++d)
                 {
                     itPrev = itDir;
