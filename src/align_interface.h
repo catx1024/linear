@@ -156,7 +156,7 @@ inline int align_block (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     double t1 = sysTime();
     int score = globalAlignment(row1, row2, Score<int, Simple> (s1, s2, s3), AlignConfig<true, true, true, true>(), -band, band);
     std::cout << "align_time_block " << (sysTime() - t1) / (sysTime() - t) << "\n";
-    return score;
+    return 0;//score;
 }
 int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                 Row<Align<String<Dna5>, ArrayGaps> >::Type & row2,
@@ -599,6 +599,9 @@ int clip_window_(Align<String<Dna5>,ArrayGaps> & aligner,
  * Clip break point of the alignment of genome and read within the lxl window 
  * direction: clip direction  > 0  -----------mmmmmmmmm,  < 0 mmmmmmmmmmm--------; where 'm' is match
  */
+//TODO sore is always set to 0 for debug.
+//So it always return -1;
+//revert the score
 inline uint64_t clip_window (String<Dna5> & genome,
 	                         String<Dna5> & read,
 	                         String<Dna5> & comrevRead,
@@ -641,7 +644,9 @@ inline uint64_t clip_window (String<Dna5> & genome,
     }
     uint64_t clip_ref = 0, clip_read = 0;
   	clip_window_ (aligner, 0, g_range, clip_ref, clip_read, direction);
-    uint64_t returnCord = _DefaultCord.createCord(_createSANode(genomeId, genomeStart + clip_ref), 
+    uint64_t returnCord = _DefaultCord.createCord(_createSANode(
+                                                                genomeId, 
+                                                                genomeStart + clip_ref), 
                                                   readStart + clip_read, 
                                                   strand);
     return returnCord;
