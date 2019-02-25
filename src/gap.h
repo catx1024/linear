@@ -1676,7 +1676,6 @@ inline int c_create_anchors_ (String<uint64_t> & g_hs,
                 p2 = k; 
         }
     }
-    std::cout << "[]xxxxganchor " << g_anchor_end << " " << g_hs_end << " " << band_level << " " << band_lower << " " << anchor_x << " " << anchor_y << "\n";
     return g_anchor_end;
 }
 
@@ -2470,7 +2469,6 @@ inline int g_alignGap_(String<Dna5> & seq,
                 }
                 band = int(90.0 * delta / window_size);
                 crstrand = _defaultTile.getStrand(tile2);
-                std::cout << "[]::g_align_gap_lrc _sv_exists" << cgstart << " " << cgend << " " << crstart << " " << crend << " " << (sv_flags[i] & g_sv_r) << " " << (sv_flags[i+1] & g_sv_l) << " " << i << " " << length(sv_flags) - 1<< "\n";
                 //clip = clip_window (seq, read, comstr, genomeId, cgstart, cgend, crstart, crend, crstrand, band, 1); 
                 ///kmer clip without alignment
                 clip = c_clip_ (seq, read, comstr, cgstart, cgend, crstart, crend, crstrand, genomeId, g_hs, g_hs_anchor, band, p1, 1);   
