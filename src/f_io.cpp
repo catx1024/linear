@@ -445,7 +445,8 @@ std::pair<int, int> countCigar(String<CigarElement<> > & cigar)
 
 void printRows(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
                Row<Align<String<Dna5>,ArrayGaps> >::Type & row2,
-               int cord_i)
+               int cord_i,
+               CharString mark)
 {
     if (cord_i < 0)
         std::cout << "printRows()+\n";
@@ -490,7 +491,7 @@ void printRows(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
         if (i % 50 == 49)
         {
             line1 += "  " + std::to_string(i + 1) + " " + std::to_string(css1) + " " + std::to_string(css2);
-            std::cout << line1 << "\n" << line2 << "\n" << line3 << "\n" << line4 << "\n\n";
+            std::cout << line1 << mark << "\n" << line2 << mark << "\n" << line3 << mark << "\n" << line4 << mark << "\n\n";
             line1.clear();
             line2.clear();
             line3.clear();
@@ -499,5 +500,5 @@ void printRows(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
     }
     clear(line0);
     clear(line00);
-    std::cout << "\n";
+    std::cout << mark << "\n";
 }

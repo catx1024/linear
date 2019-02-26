@@ -918,8 +918,8 @@ int clip_gap_segs_(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
                int delta = 3
               )
 {
-    std::cout << "[]::clip_records\n";
-    std::cout << row1 << "\n" << row2 << "\n";
+    std::cout << "[]::clip_records\n" ;
+    std::cout << "[]::clip_records " << get_cord_x(gap_start_cord) << "\n";
     int x = 0;
     int thd_1 = 1;
     int flag = 0;
@@ -1068,6 +1068,7 @@ int clip_segs(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
  * 1. Head and tail cords(segs) are merged to the joint_head and joint_tail cords.
  * 2. Segs in the middle are clipped to standalone bamrecords.  
  * @clip_records[i][j]: records of ith segment jth strand, j \in {0,1}.
+ * @merge_flag:-1 merge head; 1 merge tail; 0 merge both; ~0 skip mege
  */
 int merge_gap_segs_(String<BamAlignmentRecordLink> & bam_records,
                 String<std::pair<int, int> > & clip_records,
@@ -1081,10 +1082,12 @@ int merge_gap_segs_(String<BamAlignmentRecordLink> & bam_records,
                 Row<Align<String<Dna5>,ArrayGaps> >::Type & row_jt1,
                 Row<Align<String<Dna5>,ArrayGaps> >::Type & row_jt2,
                 uint64_t & gap_start_cord,
+                int block_size,
                 uint64_t cord_jh,
                 uint64_t cord_jt,
                 int bam_id_seg_h,
-                int bam_id_seg_t
+                int bam_id_seg_t,
+                int merge_flag
               )
 {
     std::pair<int, int> clips_h, clips_t;
@@ -1093,7 +1096,7 @@ int merge_gap_segs_(String<BamAlignmentRecordLink> & bam_records,
     uint64_t g_id, g_beginPos;
     int clip_starts, clip_ends;
     int sum = 0;
-    int thd_min_crv_gap = 20;
+    int thd_min_crv_gap = 30;
     clip_starts = 0;
     clip_ends = length(clip_records);
     clear(crv_gaps_src1);
@@ -1103,94 +1106,105 @@ int merge_gap_segs_(String<BamAlignmentRecordLink> & bam_records,
         return 1;
     }
     //try to merge head and tail of the gaps to the joints.
-    if (!empty(clip_records))
+    if (merge_flag != ~0)
     {
-    //try to merge heads;
-        setClippedPositions(row(aligner, 0), 
-                            row(aligner, 1), 
-                            clip_records[0].first, 
-                            clip_records[0].second
-                           );
-        flag_h = merge_align__(row_jh1, 
-                               row_jh2, 
-                               row(aligner, 0), 
-                               row(aligner, 1), 
-                               cord_jh, 
-                               gap_start_cord, 
-                               clips_h
-                              ); 
-    //try to merge tails;
-        setClippedPositions(row(aligner, 0), 
-                            row(aligner, 1), 
-                            back(clip_records).first, 
-                            back(clip_records).second
-                           );
-        flag_t = merge_align__(row(aligner, 0), 
-                               row(aligner, 1), 
-                               row_jt1, 
-                               row_jt2, 
-                               gap_start_cord, 
-                               cord_jt,
-                               clips_t
-                              ); 
-    }
-    setClippedEndPositions(row_jh1, row_jh2, clips_h.first);
-    setClippedBeginPositions(row_jt1, row_jt2, clips_t.second);
-    insertBamRecordCigar(bam_records[bam_id_seg_h], row_jh1, row_jh2);
-    g_id = _getSA_i1(_DefaultCord.getCordX(cord_jt));
-    g_beginPos = get_cord_x (cord_jt) + beginPosition(row_jt1);
-    insertBamRecord(bam_records[bam_id_seg_t], row_jt1, row_jt2, g_id, g_beginPos, 0); //insert head_joint and tail_joint cigar at end or at the start of each bam records 
-    if (!flag_h && !flag_t)
-    {
-        if (length(clip_records) > 1)
+        if (!empty(clip_records))
+        {
+        //try to merge heads;
+            if (merge_flag <= 0)
+            {
+
+                setClippedPositions(row(aligner, 0), 
+                                    row(aligner, 1), 
+                                    clip_records[0].first, 
+                                    clip_records[0].second
+                                   );
+                flag_h = merge_align__(row_jh1, 
+                                       row_jh2, 
+                                       row(aligner, 0), 
+                                       row(aligner, 1), 
+                                       cord_jh, 
+                                       gap_start_cord, 
+                                       clips_h
+                                      ); 
+                setClippedEndPositions(row_jh1, row_jh2, clips_h.first);
+                insertBamRecordCigar(bam_records[bam_id_seg_h], row_jh1, row_jh2);
+            }
+        //try to merge tails;
+            if (merge_flag >= 0)
+            {
+                setClippedPositions(row(aligner, 0), 
+                                    row(aligner, 1), 
+                                    back(clip_records).first, 
+                                    back(clip_records).second
+                                   );
+                flag_t = merge_align__(row(aligner, 0), 
+                                       row(aligner, 1), 
+                                       row_jt1, 
+                                       row_jt2, 
+                                       gap_start_cord, 
+                                       cord_jt,
+                                       clips_t
+                                      ); 
+                g_id = _getSA_i1(_DefaultCord.getCordX(cord_jt));
+                g_beginPos = get_cord_x (cord_jt) + beginPosition(row_jt1);
+                setClippedBeginPositions(row_jt1, row_jt2, clips_t.second);
+                insertBamRecord(bam_records[bam_id_seg_t], row_jt1, row_jt2, g_id, g_beginPos, 0);
+            }
+        }
+        //insert head_joint and tail_joint cigar at end or at the start of each bam records 
+        if (!flag_h && !flag_t)
+        {
+            if (length(clip_records) > 1)
+            {
+                setClippedPositions(row(aligner, 0), row(aligner, 1), clips_h.second, clip_records[0].second);
+                insertBamRecordCigar(bam_records[bam_id_seg_h], row(aligner, 0), row(aligner, 1));
+                setClippedPositions(row(aligner, 0), row(aligner, 1), back(clip_records).first, clips_t.first);
+                insertBamRecordCigar(bam_records[bam_id_seg_t], row(aligner, 0), row(aligner, 1), 0); 
+                bam_records[bam_id_seg_t].beginPos = back(clip_records_src1).first;
+                clip_starts += 1;
+                clip_ends -= 1; 
+            }
+            else
+            {
+                setClippedPositions(row(aligner, 0), row(aligner, 1), clips_h.second, clips_t.first);
+                insertBamRecordCigar(bam_records[bam_id_seg_h], row(aligner, 0), row(aligner, 1)); //append at the end  
+                bam_records[bam_id_seg_h].addNext(bam_id_seg_t);
+                return 0; 
+            }
+               
+            std::cout << "[]::merge_gap_segs_2 " << " clipped end " << get_cord_x(gap_start_cord) + endPosition(row(aligner, 0)) << "\n";
+        }
+        else if (!flag_h && flag_t) //head can be merged while tailed failed
         {
             setClippedPositions(row(aligner, 0), row(aligner, 1), clips_h.second, clip_records[0].second);
-            insertBamRecordCigar(bam_records[bam_id_seg_h], row(aligner, 0), row(aligner, 1));
+            insertBamRecordCigar(bam_records[bam_id_seg_h], row(aligner, 0), row(aligner, 1)); //append at the end
+            appendValue (crv_gaps_src1, std::pair<int, int>(back(clip_records_src1).second, beginPosition(row_jt1)));
+            appendValue (crv_gaps_src2, std::pair<int, int>(back(clip_records_src2).first, beginPosition(row_jt2)));
+            if (length(clip_records) > 1) 
+            {
+                clip_starts += 1;
+            }
+            else //when only one seg exists in the gap
+            {
+                return 0;
+            }
+        } 
+        else if (flag_h && !flag_t)
+        {
             setClippedPositions(row(aligner, 0), row(aligner, 1), back(clip_records).first, clips_t.first);
-            insertBamRecordCigar(bam_records[bam_id_seg_t], row(aligner, 0), row(aligner, 1), 0); 
+            insertBamRecordCigar(bam_records[bam_id_seg_t], row(aligner, 0), row(aligner, 1), 0); //insert at the front 
             bam_records[bam_id_seg_t].beginPos = back(clip_records_src1).first;
-            clip_starts += 1;
-            clip_ends -= 1; 
-        }
-        else
-        {
-            setClippedPositions(row(aligner, 0), row(aligner, 1), clips_h.second, clips_t.first);
-            insertBamRecordCigar(bam_records[bam_id_seg_h], row(aligner, 0), row(aligner, 1)); //append at the end  
-            bam_records[bam_id_seg_h].addNext(bam_id_seg_t);
-            return 0; 
-        }
-           
-        std::cout << "[]::merge_gap_segs_2 " << " clipped end " << get_cord_x(gap_start_cord) + endPosition(row(aligner, 0)) << "\n";
-    }
-    else if (!flag_h && flag_t) //head can be merged while tailed failed
-    {
-        setClippedPositions(row(aligner, 0), row(aligner, 1), clips_h.second, clip_records[0].second);
-        insertBamRecordCigar(bam_records[bam_id_seg_h], row(aligner, 0), row(aligner, 1)); //append at the end
-        appendValue (crv_gaps_src1, std::pair<int, int>(back(clip_records_src1).second, beginPosition(row_jt1)));
-        appendValue (crv_gaps_src2, std::pair<int, int>(back(clip_records_src2).first, beginPosition(row_jt2)));
-        if (length(clip_records) > 1) 
-        {
-            clip_starts += 1;
-        }
-        else //when only one seg exists in the gap
-        {
-            return 0;
-        }
-    } 
-    else if (flag_h && !flag_t)
-    {
-        setClippedPositions(row(aligner, 0), row(aligner, 1), back(clip_records).first, clips_t.first);
-        insertBamRecordCigar(bam_records[bam_id_seg_t], row(aligner, 0), row(aligner, 1), 0); //insert at the front 
-        bam_records[bam_id_seg_t].beginPos = back(clip_records_src1).first;
-        appendValue (crv_gaps_src1, std::pair<int, int>(beginPosition(row_jh1), clip_records_src1[0].first));
-        appendValue (crv_gaps_src2, std::pair<int, int>(beginPosition(row_jh2), clip_records_src2[0].first));
-        if (length(clip_records) > 1)
-        {
-            clip_ends -= 1;
-        }       
-        else
-        {
-            return 0;
+            appendValue (crv_gaps_src1, std::pair<int, int>(beginPosition(row_jh1), clip_records_src1[0].first));
+            appendValue (crv_gaps_src2, std::pair<int, int>(beginPosition(row_jh2), clip_records_src2[0].first));
+            if (length(clip_records) > 1)
+            {
+                clip_ends -= 1;
+            }       
+            else
+            {
+                return 0;
+            }
         }
     }
     //Following loop try to clip segs left into standalone bam records
@@ -1213,6 +1227,19 @@ int merge_gap_segs_(String<BamAlignmentRecordLink> & bam_records,
         }
         std::cout << "crv " << clip_records_src2[j].first << " " << clip_records_src2[j].second << "\n";
     }
+    if (!empty(clip_records_src1)) //insert first and last  
+    {
+        if (clip_records_src1[0].first > thd_min_crv_gap)
+        {
+            appendValue(crv_gaps_src1, std::pair<int, int> (0, clip_records_src1[0].first));
+            appendValue(crv_gaps_src2, std::pair<int, int> (0, clip_records_src2[0].first));   
+        }
+        if (block_size - back(clip_records_src1).second > thd_min_crv_gap)
+        {
+            appendValue(crv_gaps_src1, std::pair<int, int> (back(clip_records_src1).second, block_size));
+            appendValue(crv_gaps_src2, std::pair<int, int> (back(clip_records_src2).second, block_size));   
+        }
+    }
     return 0;
 }
 int align_gap (String<BamAlignmentRecordLink> & bam_records,
@@ -1231,7 +1258,7 @@ int align_gap (String<BamAlignmentRecordLink> & bam_records,
                 int thd_reject_score,
                 int thd_accept_score,
                 int thd_accept_density,
-                bool merge_flag = true
+                int merge_flag = 0
                )
 {
     if (empty(gaps.c_pairs))
@@ -1244,46 +1271,26 @@ int align_gap (String<BamAlignmentRecordLink> & bam_records,
     std::cout << "[]align_gaps\n ";
 
     int flag = 0;
-
-    if (_DefaultCord.getCordStrand(gap_start_cord ^ gap_end_cord))
-    {
-        return 1;
-    }
-    int block_size = std::max(get_cord_x(gap_end_cord - gap_start_cord),
-                              get_cord_y(gap_end_cord - gap_start_cord));
+    int block_size;
+    int thd_shift = 50;
     int g_id = _getSA_i1 (_DefaultCord.getCordX(gap_start_cord));
+    TRow & r1 = row(aligner, 0);
+    TRow & r2 = row(aligner, 1);
+    if (get_cord_strand (gap_start_cord ^ gap_end_cord))
+    {
+        block_size = get_cord_x (gap_end_cord - gap_start_cord) + thd_shift;
+    }
+    else
+    {
+        block_size = std::max(get_cord_x(gap_end_cord - gap_start_cord),
+                              get_cord_y(gap_end_cord - gap_start_cord));
+    }
     //WARNING::need to modify band::too large band
     int band = block_size >> 1;
     //TODO::change align block to align start and end cords
     align_cord (row(aligner, 0), row(aligner, 1), genomes[g_id], read, comrevRead, gap_start_cord, block_size,band);
-    /*
-    if (block_size > 1000)
-    {
-        Align<String<Dna5>, ArrayGaps> tmp_aligner;
-        resize(rows(tmp_aligner), 2);
-        int tmp_delta = 3000;
-        int tmp_block_size = block_size - tmp_delta;
-        int tmp_band = tmp_block_size / 2;
-        uint64_t tmp_cord = _DefaultCord.shift(gap_start_cord, tmp_delta, tmp_delta);
-        align_cord (row(tmp_aligner, 0), row(tmp_aligner, 1), genomes[g_id], read, comrevRead,tmp_cord, tmp_block_size, tmp_band, 0);
-        std::cout << "[]::align_gaps 23 "
-                   << get_cord_x(tmp_cord) + tmp_block_size << " "
-                   << get_cord_y(tmp_cord) + tmp_block_size << " "
-                   << tmp_block_size << " "
-                   << tmp_band << "\n"
-                  << tmp_aligner;
-    }
-    */
-    std::cout << "[]::align_gaps 2 " 
-              << get_cord_x(gap_start_cord) << " "
-              << get_cord_x(gap_start_cord) + block_size << " "
-              << get_cord_y(gap_start_cord) << " "
-              << get_cord_y(gap_start_cord) + block_size << " "
-              << block_size << " "
-              << _DefaultCord.getCordStrand(gap_start_cord) << " "
-              << band << " "
-              << "\n" 
-              << aligner;
+
+    printRows(r1, r2, -1, " pagaps");
     clip_gap_segs_(row(aligner, 0), 
                row(aligner, 1), 
                clip_records, 
@@ -1295,9 +1302,7 @@ int align_gap (String<BamAlignmentRecordLink> & bam_records,
                thd_accept_score,
                thd_accept_density
               );
-    if (merge_flag)
-    {
-        flag = merge_gap_segs_(bam_records, 
+    flag = merge_gap_segs_(bam_records, 
             clip_records, 
             clip_records_src1, 
             clip_records_src2,
@@ -1309,29 +1314,15 @@ int align_gap (String<BamAlignmentRecordLink> & bam_records,
             gaps.get_r2_pair(i).first,
             gaps.get_r2_pair(i).second,
             gap_start_cord,
+            block_size,
             gaps.getJointHeadCord(i),
             gaps.getJointTailCord(i),
             gaps.getBamSegIdHead(i),
-            gaps.getBamSegIdTail(i)
+            gaps.getBamSegIdTail(i),
+            merge_flag
         ); 
-    }
-    else
-    {
-        for (int i = 0; i < length(clip_records); i++)
-        {
-            setClippedPositions(row(aligner, 0), row (aligner, 1), clip_records[i].first, clip_records[i].second);
-            int g_id = _getSA_i1(_DefaultCord.getCordX(gap_start_cord));
-            int g_beginPos = clip_records_src1[i].first;
-            int strand = _DefaultCord.getCordStrand(gap_start_cord);
-            insertNewBamRecord(bam_records, row(aligner, 0), row(aligner, 1), g_id, g_beginPos, strand);
-//<<<<debug start
-        String<CigarElement<> > tmpcigar;
-        align2cigar(tmpcigar, row(aligner, 0), row(aligner, 1));
-        printCigar(tmpcigar);
-        std::cout << "merge_flag " << " " << aligner << "\n";
-//>>>>debug end
-        }
-    }
+
+    return 0;
     std::cout << "[]::align_gaps merge gaps " 
               << i << " " 
               << get_cord_x(gap_start_cord) << " "
@@ -1377,6 +1368,7 @@ int align_gaps (String<BamAlignmentRecordLink> & bam_records,
         std::cout << "align_gaps len " << i << "\n";
         uint64_t gap_start_cord = gaps.get_c_pair(i).first;
         uint64_t gap_end_cord = gaps.get_c_pair(i).second; 
+        int merge_flag = get_cord_strand (gap_start_cord ^ gap_end_cord)? -1: 0;
         align_gap(bam_records,
                   gaps,
                   genomes,
@@ -1393,7 +1385,7 @@ int align_gaps (String<BamAlignmentRecordLink> & bam_records,
                   thd_reject_score,
                   thd_accept_score,
                   thd_accept_density,
-                  true
+                  merge_flag
                 );
         for (int j = 0; j < length(crv_gaps_src1); j++)
         {
@@ -1406,6 +1398,14 @@ int align_gaps (String<BamAlignmentRecordLink> & bam_records,
             cmpRevCord (cr_gap_start_cord, cr_gap_end_cord, cr_gap_start_cord, cr_gap_end_cord, length(read));
             cr_gap_start_cord = _DefaultCord.shift(cr_gap_start_cord, -thd_dx, -thd_dy);
             cr_gap_end_cord = _DefaultCord.shift(cr_gap_end_cord, thd_dx, thd_dy);
+            if (j == length(crv_gaps_src1) - 1)
+            {
+                merge_flag = 1;
+            }
+            else 
+            {
+                merge_flag = ~0;
+            }
             align_gap(bam_records,
                       gaps,   //gaps will not be used when bam_flag == flase
                       genomes,
@@ -1422,7 +1422,7 @@ int align_gaps (String<BamAlignmentRecordLink> & bam_records,
                       thd_reject_score,
                       thd_accept_score,
                       thd_accept_density,
-                      false
+                      merge_flag
                 );   
         }
     }
