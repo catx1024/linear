@@ -13,6 +13,7 @@ using namespace seqan;
 int const s1 = 3; //match
 int const s2 = 0; //mismatch
 int const s3 = -1; //gap
+int _infinity = ~0;
 Score<int, Simple> score1_(s1, s2, s3);
 float s_score_density_thd = 2; //if < the value alignment of cords will be dropped
 float s_score_window_thd = 0.75;
@@ -1227,18 +1228,20 @@ int merge_gap_segs_(String<BamAlignmentRecordLink> & bam_records,
         }
         std::cout << "crv " << clip_records_src2[j].first << " " << clip_records_src2[j].second << "\n";
     }
+    std::cout << "crv2 " << clip_records_src1[0].first - get_cord_x(gap_start_cord) << "\n";
     if (!empty(clip_records_src1)) //insert first and last  
     {
-        if (clip_records_src1[0].first > thd_min_crv_gap)
+        if (clip_records_src1[0].first - get_cord_x(gap_start_cord) > thd_min_crv_gap)
         {
-            appendValue(crv_gaps_src1, std::pair<int, int> (0, clip_records_src1[0].first));
-            appendValue(crv_gaps_src2, std::pair<int, int> (0, clip_records_src2[0].first));   
-        }
-        if (block_size - back(clip_records_src1).second > thd_min_crv_gap)
+            appendValue(crv_gaps_src1, std::pair<int, int> (_infinity, clip_records_src1[0].first));
+            appendValue(crv_gaps_src2, std::pair<int, int> (_infinity, clip_records_src2[0].first));   
+        } // head gap
+        
+        if (block_size - back(clip_records_src1).second + get_cord_x(gap_start_cord) > thd_min_crv_gap)
         {
-            appendValue(crv_gaps_src1, std::pair<int, int> (back(clip_records_src1).second, block_size));
-            appendValue(crv_gaps_src2, std::pair<int, int> (back(clip_records_src2).second, block_size));   
-        }
+            appendValue(crv_gaps_src1, std::pair<int, int> (back(clip_records_src1).second, _infinity));
+            appendValue(crv_gaps_src2, std::pair<int, int> (back(clip_records_src2).second, _infinity));   
+        } //tail gap
     }
     return 0;
 }
@@ -1274,8 +1277,6 @@ int align_gap (String<BamAlignmentRecordLink> & bam_records,
     int block_size;
     int thd_shift = 50;
     int g_id = _getSA_i1 (_DefaultCord.getCordX(gap_start_cord));
-    TRow & r1 = row(aligner, 0);
-    TRow & r2 = row(aligner, 1);
     if (get_cord_strand (gap_start_cord ^ gap_end_cord))
     {
         block_size = get_cord_x (gap_end_cord - gap_start_cord) + thd_shift;
@@ -1288,9 +1289,10 @@ int align_gap (String<BamAlignmentRecordLink> & bam_records,
     //WARNING::need to modify band::too large band
     int band = block_size >> 1;
     //TODO::change align block to align start and end cords
-    align_cord (row(aligner, 0), row(aligner, 1), genomes[g_id], read, comrevRead, gap_start_cord, block_size,band);
+    std::cout << "axx " << get_cord_x(gap_start_cord) << " " << get_cord_strand(gap_start_cord) << " " << get_cord_y(gap_start_cord) << " " << block_size << " " << band << "\n";
+    align_cord (row(aligner, 0), row(aligner, 1), genomes[g_id], read, comrevRead, gap_start_cord, block_size, band);
 
-    printRows(r1, r2, -1, " pagaps");
+    printRows(row(aligner, 0), row(aligner, 1), -1, " pagaps");
     clip_gap_segs_(row(aligner, 0), 
                row(aligner, 1), 
                clip_records, 
@@ -1391,21 +1393,44 @@ int align_gaps (String<BamAlignmentRecordLink> & bam_records,
         {
             std::cout << "[]::crv_gaps_src " << crv_gaps_src1[j].first << " "<< crv_gaps_src1[j].second << " " << crv_gaps_src2[j].first << " " << crv_gaps_src2[j].second << "\n";
         }
-        for (int j = 0; j < length(crv_gaps_src1); j++)
+        uint64_t cr_gap_start_cord, cr_gap_end_cord;
+        for (int j = 0; j < length(crv_gaps_src1); j++) //clip----clip
         {
-            uint64_t cr_gap_start_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].first, crv_gaps_src2[j].first);
-            uint64_t cr_gap_end_cord = set_cord_xy (gap_end_cord, crv_gaps_src1[j].second, crv_gaps_src2[j].second);
-            cmpRevCord (cr_gap_start_cord, cr_gap_end_cord, cr_gap_start_cord, cr_gap_end_cord, length(read));
-            cr_gap_start_cord = _DefaultCord.shift(cr_gap_start_cord, -thd_dx, -thd_dy);
-            cr_gap_end_cord = _DefaultCord.shift(cr_gap_end_cord, thd_dx, thd_dy);
-            if (j == length(crv_gaps_src1) - 1)
+            if (crv_gaps_src2[j].first != _infinity && crv_gaps_src2[j].second != _infinity)
             {
-                merge_flag = 1;
-            }
-            else 
-            {
+                cr_gap_start_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].first, crv_gaps_src2[j].first);
+                cr_gap_end_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].second, crv_gaps_src2[j].second);
+                cmpRevCord (cr_gap_start_cord, cr_gap_end_cord, cr_gap_start_cord, cr_gap_end_cord, length(read));
+                cr_gap_start_cord = _DefaultCord.shift(cr_gap_start_cord, -thd_dx, -thd_dy);
+                cr_gap_end_cord = _DefaultCord.shift(cr_gap_end_cord, thd_dx, thd_dy);
                 merge_flag = ~0;
             }
+            else if (crv_gaps_src2[j].first != _infinity) //clip---
+            {
+                int len_extend = get_cord_x (gap_end_cord) -  crv_gaps_src1[j].first;
+                cr_gap_start_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].first, crv_gaps_src2[j].first);
+                cr_gap_end_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].first + len_extend, crv_gaps_src2[j].first + len_extend);
+                cmpRevCord (cr_gap_start_cord, cr_gap_end_cord, cr_gap_start_cord, cr_gap_end_cord, length(read));
+                cr_gap_start_cord = _DefaultCord.shift(cr_gap_start_cord, -thd_dx, -thd_dy);
+                cr_gap_end_cord = _DefaultCord.shift(cr_gap_end_cord, thd_dx, thd_dy);
+                merge_flag = ~0;
+                std::cout << "crvl " << get_cord_y(cr_gap_start_cord) << " " << get_cord_strand(cr_gap_start_cord) << " " << get_cord_x(cr_gap_start_cord) << " " << get_cord_x(gap_end_cord) << " " << get_cord_y(gap_end_cord) << " " << length(read) - crv_gaps_src1[j].first << " " << length(read) - crv_gaps_src2[j].first << "\n";
+            }
+            else if (crv_gaps_src2[j].second != _infinity) //---clip
+            {
+                int len_extend = crv_gaps_src1[j].second - get_cord_x(gap_start_cord);
+                cr_gap_start_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].second - len_extend, crv_gaps_src2[j].second - len_extend);
+                cr_gap_end_cord = set_cord_xy (gap_start_cord, crv_gaps_src1[j].second, crv_gaps_src2[j].second);
+                cmpRevCord (cr_gap_start_cord, cr_gap_end_cord, cr_gap_start_cord, cr_gap_end_cord, length(read));
+                cr_gap_start_cord = _DefaultCord.shift(cr_gap_start_cord, -thd_dx, -thd_dy);
+                cr_gap_end_cord = _DefaultCord.shift(cr_gap_end_cord, thd_dx, thd_dy);
+                merge_flag = ~0;
+            }
+            else
+            {
+                continue;
+            }
+            std::cout << "crvdx " << get_cord_y(cr_gap_start_cord) << " " << get_cord_y(cr_gap_end_cord) << " " << get_cord_x(cr_gap_start_cord) << " " << get_cord_x(cr_gap_end_cord) << " " << get_cord_strand(cr_gap_start_cord) << " " << get_cord_strand(cr_gap_end_cord) << " " << merge_flag << "\n";
             align_gap(bam_records,
                       gaps,   //gaps will not be used when bam_flag == flase
                       genomes,
@@ -1632,7 +1657,7 @@ int align_cords (StringSet<String<Dna5> >& genomes,
             continue; //alignment quality check, drop poorly aligned 
         }
         printRows(row(aligner, ri), row(aligner, ri + 1), i);
-        std::cout << "merge_status " << i << " " << flag << " " << get_cord_x(cord_start) << " " << get_cord_x(cords[i]) << " " << _DefaultCord.isBlockEnd(cord_start)<< "\n";
+        std::cout << "merge_status " << i << " " << flag << " " << get_cord_x(cord_start) << " " << get_cord_y(cord_start) << " " << get_cord_y(cords[i]) << " " << get_cord_strand(cord_start) << " "  << get_cord_x(cords[i]) << " " << _DefaultCord.isBlockEnd(cord_start)<< "\n";
         if (_DefaultCord.isBlockEnd(pre_cord_start))
         {
             clip_segs(row(aligner, ri),
@@ -1646,7 +1671,7 @@ int align_cords (StringSet<String<Dna5> >& genomes,
                             _DefaultCord.getCordStrand(cords[i]));
             std::cout << "beginPos " << get_cord_x(cord_start) << " " << beginPosition(row(aligner, ri));
         } 
-        else
+        else 
         {
             flag = merge_align_(
                           row(aligner, ri_pre), 
