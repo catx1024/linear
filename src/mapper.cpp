@@ -73,33 +73,7 @@ int Mapper<TDna, TSpec>::createIndex(bool efficient)
     return 0;
 }
 
-template <typename TDna, typename TSpec>
-void Mapper<TDna, TSpec>::printCords()
-{
-    std::cerr << "Writing results to disk \r";
-    double time = sysTime();
-    unsigned strand;
-    unsigned count = 0;
-    for (unsigned k = 0; k < length(cordSet); k++)
-    {
-        count++;
-        if (empty(cordSet[k]))
-            of << k << " th Strand " << "2 length " << length(reads()[k]) << "\n";
-        else
-        {
-            if (_DefaultCord.getCordStrand(back(cordSet[k]))) 
-                strand = 1;
-            else 
-                strand = 0;
-            of << k << " th Strand " << strand << " length " << length(reads()[k]) << "\n";
-            _DefaultCord.print(cordSet[k], of);
-        }
-    }
-    of.close();
-    std::cerr << ">Write results to disk        " << count << std::endl;
-    std::cerr << "    End writing results. Time[s]" << sysTime() - time << std::endl;
-}
-void print_align_sam_header_ (StringSet<CharString> & genomesId,
+int print_align_sam_header_ (StringSet<CharString> & genomesId,
                              StringSet<String<Dna5> > & genomes,
                              std::ofstream & of
                             )
@@ -127,6 +101,34 @@ void print_align_sam_record_(StringSet<String< BamAlignmentRecord > > & records,
         }
     }
 }
+int print_align_sam_record_(StringSet<String< BamAlignmentRecordLink> > & records, 
+                     StringSet<String<uint64_t> > & cordSet,
+                     StringSet<CharString> & readsId, 
+                     StringSet<CharString> & genomesId,
+                     std::ofstream & of
+                    )
+{
+    for (int i = 0; i < length(records); i++)
+    {
+        for (int j = 0; j < length(records[i]); j++)
+        {
+            records[i][j].qName = readsId[i];
+            CharString g_id = genomesId[records[i][j].rID];
+            int dt = writeSam(of, records[i], j, g_id);
+            //<<<debug 
+        }
+
+        for (int j = 0; j < length(records[i]); j++)
+        {
+            std::pair<int,int> lens;
+            lens = countCigar(records[i][j].cigar);
+            if (records[i][j].isEnd())
+                std::cout << "\n";
+            std::cout << "cigarLen " << lens.first << " " << lens.second << "\n";
+            //>>>debug
+        }
+    }
+}
 template <typename TDna, typename TSpec>
 void print_align_sam (Mapper<TDna, TSpec> & mapper)
 {
@@ -137,6 +139,7 @@ void print_align_sam (Mapper<TDna, TSpec> & mapper)
                             mapper.getOf()
                            );
     print_align_sam_record_(mapper.getBamRecords(),
+                            mapper.cords(),
                             mapper.readsId(),
                             mapper.genomesId(),
                             mapper.getOf()
@@ -259,7 +262,7 @@ void Mapper<TDna, TSpec>::printCordsRaw2()
                 }
                 
                 of  << mark  << _DefaultCord.getCordY(cordSet[k][j]) << " " 
-                    << _getSA_i2(_DefaultCord.getCordX(cordSet[k][j])) << " " << d2 << " " << d << " \n";
+                    << _getSA_i2(_DefaultCord.getCordX(cordSet[k][j])) << " " << d2 << " " << d << " " << j << " \n";
                 cordCount++;
                 fflag = 0;
             }
@@ -356,7 +359,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
                    StringSet<String<uint64_t> > & cords,
                    StringSet<String<uint64_t> > & clips,
                    StringSet<String<TDna> > & seqs,
-                   StringSet<String<BamAlignmentRecord> >& bam_records,
+                   StringSet<String<BamAlignmentRecordLink> >& bam_records,
                    unsigned & threads,
                    int p1
                   )
@@ -372,11 +375,14 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
     String<uint64_t> red_len;
     resize (gap_len, threads);
     resize (red_len, threads);
-    for (int i = 0; i < (int)length(gap_len); i++)
-    {
-        gap_len[i]  = 0;
-        red_len[i] = 0;
-    }
+    for (int i = 0; i < length(gap_len); i++)
+{
+    gap_len[i]  = 0;
+    red_len[i] = 0;
+}
+    //double time2 = sysTime();
+int su = 0;
+int64_t len = 0;
 #pragma omp parallel
 {
     unsigned size2 = length(reads) / threads;
@@ -387,7 +393,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
     StringSet<String<uint64_t> >  cordsTmp;
     StringSet< String<short> > f1;
     StringSet<String<uint64_t> > clipsTmp;
-    StringSet<String<BamAlignmentRecord> > bam_records_tmp;
+    StringSet<String<BamAlignmentRecordLink> > bam_records_tmp;
     unsigned thd_id =  omp_get_thread_num();
     if (thd_id < length(reads) - size2 * threads)
     {
@@ -404,7 +410,6 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
     String<uint64_t> bands;
     resize (g_hs, 1ULL << 20);
     resize (g_anchor, 1ULL<<20);
-
     #pragma omp for
     for (unsigned j = 0; j < length(reads); j++)
     {
@@ -429,7 +434,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
                 path_dst(begin(crhit), end(crhit), f1, f2, cordsTmp[c], cordLenThr);
             }   
             gap_len[thd_id] += mapGaps(seqs, reads[j], comStr, cordsTmp[c], g_hs, g_anchor, clipsTmp[c], f1, f2, 300, 192, p1);
-            align_cords(seqs, reads[j], comStr, cordsTmp[c], bam_records_tmp[c]);
+            align_cords(seqs, reads[j], comStr, cordsTmp[c], bam_records_tmp[c], p1);
         }   
         c += 1;
     } 
@@ -443,6 +448,7 @@ int rawMap_dst2_MF(typename PMCore<TDna, TSpec>::Index & index,
         }
     
 }
+    //std::cerr << "    End raw mapping. Time[s]: " << sysTime() - time << std::flush << std::endl;
     return 0;
 }
 
@@ -495,7 +501,6 @@ int map(Mapper<TDna, TSpec> & mapper, int p1)
     print_clip_gvf(mapper);
     return 0;
 }
-
 int main(int argc, char const ** argv)
 {
     double time = sysTime();

@@ -54,6 +54,7 @@ struct CordBase
     typedef unsigned Size;
     
     Bit bit;
+    uint64_t flagEnd;
     Mask mask;
     Mask maskx;
     Mask valueMask;
@@ -66,7 +67,8 @@ struct CordBase
     Mask valueMask_dstr;
     
     CordBase():
-        bit(20),    
+        bit(20),
+        flagEnd((1ULL << 60)),
         mask(0xfffff),
         maskx(0xffffffffff),
         valueMask((1ULL<< 60) - 1),
@@ -103,13 +105,10 @@ struct Cord
     //void setHead(uint64_t &, uint64_t const &, uint64_t const & = _DefaultCordBase.headFlag);
     void setMaxLen(String<uint64_t> &, uint64_t const &, uint64_t const & = _DefaultCordBase.mask);
     uint64_t getMaxLen(String<uint64_t> const &, uint64_t const & = _DefaultCordBase.mask);
-    uint64_t shift(uint64_t & val, int64_t x, int64_t y, unsigned const & = _DefaultCordBase.bit); //add x and y
+    uint64_t shift(uint64_t const & val, int64_t x, int64_t y, unsigned const & = _DefaultCordBase.bit); //add x and y
 
-    
-    bool print (CordString const &, std::ostream & = std::cout, CordBase const & = _DefaultCordBase) const;
-    bool print (CordSet const &, std::ostream & = std::cout, CordBase const & = _DefaultCordBase) const;
-    bool printAlignmentMatrix(CordSet const &,  CordBase const & ) const;
-    
+    bool isCordsOverlap(uint64_t & val1, uint64_t & val2, int64_t thd);
+    bool isBlockEnd(uint64_t &, uint64_t const & = _DefaultCordBase.flagEnd);
 }_DefaultCord; 
 
 inline typename Cord::CordType 
@@ -205,34 +204,43 @@ inline uint64_t Cord::getMaxLen(String<uint64_t> const & cord, uint64_t const & 
     return cord[0] & mask;
 }
 
-inline uint64_t Cord::shift(uint64_t & val, int64_t x, int64_t y, unsigned const & bit) //add x and y
+inline uint64_t Cord::shift(uint64_t const & val, int64_t x, int64_t y, unsigned const & bit) //add x and y
 {
-    return uint64_t((int64_t)val + (x << bit) + y);
+    if (x < 0)
+        return val - ((-x) << bit) + y;
+    else
+        return val + (x << bit) + y;
 }
 
-inline bool Cord::print(typename Cord::CordString const & cords, std::ostream & of, CordBase const & cordBase) const
+inline bool Cord::isCordsOverlap(uint64_t & val1, uint64_t & val2, int64_t thd)
 {
-    of << "length of cords " << length(cords) << std::endl;
-    for (unsigned j = 1; j < length(cords); j++)
-               of << getCordY(cords[j], cordBase.mask) << " " 
-                  << _getSA_i1(getCordX(cords[j], cordBase.bit)) << " "
-                  << _getSA_i2(getCordX(cords[j], cordBase.bit))  << std::endl;
-    of << std::endl;
-    return true;
+    int64_t dx = _DefaultCord.getCordX(val2 - val1);
+    int64_t dy = _DefaultCord.getCordY(val2 - val1);
+    //std::cout << "[]::isCordsOverlap " << dx << " " << dy << " " << _DefaultCord.getCordX(val2) << " " << _DefaultCord.getCordX(val1) << " " << thd << "\n";
+    return (dx >= 0) && (dx < thd) && (dy >= 0) && (dy < thd);
 }
 
-
-
-inline bool Cord::print(typename Cord::CordSet const & cords, std::ostream & of, CordBase const & cordBase) const
+inline bool Cord::isBlockEnd(uint64_t & val, uint64_t const & flag)
 {
-    of << "Cord::print() " << std::endl;
-    unsigned j = 0;
-    for (auto && k : cords)
-    {
-        of << j++ << std::endl;
-        print(k, of, cordBase);
-    }
-    return true;
+    return val & flag;
+}
+
+inline uint64_t get_cord_x (uint64_t val) {return _getSA_i2(_DefaultCord.getCordX(val));}
+inline uint64_t get_cord_y (uint64_t val) {return _DefaultCord.getCordY(val);}
+inline uint64_t get_cord_strand (uint64_t val) {return _DefaultCord.getCordStrand(val);}
+
+inline void cmpRevCord(uint64_t val1, 
+                    uint64_t val2,
+                    uint64_t & cr_val1,
+                    uint64_t & cr_val2,
+                    uint64_t read_len)
+{
+    cr_val1 = (val1 - get_cord_y(val1) + read_len - get_cord_y(val2)) ^ _DefaultCordBase.flag_strand;
+    cr_val2 = (val2 - get_cord_y(val1) + read_len - get_cord_y(val2)) ^ _DefaultCordBase.flag_strand;
+}
+inline uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y)
+{
+    return (val & (~_DefaultCordBase.valueMask)) + (x << _DefaultCordBase.bit) + y;
 }
 
 
@@ -1013,7 +1021,10 @@ inline unsigned getIndexMatchAll(typename PMCore<TDna, TSpec>::Index & index,
                             }
                             pre = index.ysa[pos];
                         }
-                        ++pos;
+                        if (++pos > length(index.ysa) - 1)
+                        {
+                            break;
+                        }
                     }
                 }
             }
@@ -1127,7 +1138,7 @@ inline uint64_t getAnchorMatchList(Anchors & anchors, unsigned const & readLen, 
     int64_t list[200000]={0};
     unsigned lcount = 0;
     //printf("[debug]::getAnchorMatchList %d\n", anchors.length());
-    for (unsigned k = 1; k <= anchors.length(); k++)
+    for (unsigned k = 1; k < anchors.length(); k++)
     {
 //TODO 0.1 should be replaced by a cutoff in marpparm
         if (anchors[k] - ak > (((unsigned)(0.1 * readLen)) << 20))//mapParm.anchorDeltaThr)
