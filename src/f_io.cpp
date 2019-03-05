@@ -57,7 +57,6 @@ void align2cigar_(String<CigarElement< > > &cigar,
     typedef Row<Align<String<Dna5>,ArrayGaps> >::Type TRow;
     typename Iterator<TRow>::Type it1 = begin(gaps1);
     typename Iterator<TRow>::Type it2 = begin(gaps2);
-
     char op = '?', lastOp = ' ';
     char last_op;
     unsigned numOps = 0;
