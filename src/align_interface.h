@@ -1587,7 +1587,8 @@ int align_cords (StringSet<String<Dna5> >& genomes,
         g_beginPos = get_cord_x (cords[i]);
         strand = _DefaultCord.getCordStrand(cords[i]);
         cord_start = cords[i];
-        cord_end = _DefaultCord.shift(cord_start, block_size, block_size);
+        int dy = std::min(int(length(read) - 1 - get_cord_y(cord_start)), block_size);
+        cord_end = _DefaultCord.shift(cord_start, dy, dy);
         if (_DefaultCord.isBlockEnd(cords[i - 1])) 
         {
             int dy = std::min(thd_max_dshift, (int)get_cord_y(cords[i]));
@@ -1605,7 +1606,7 @@ int align_cords (StringSet<String<Dna5> >& genomes,
         }
         if (_DefaultCord.isBlockEnd(cords[i]))
         {
-            int dy = std::min ((int)length(read) - (int)get_cord_y(cord_end), thd_max_dshift);
+            int dy = std::min ((int)length(read) - 1 - (int)get_cord_y(cord_end), thd_max_dshift);
             int dx = dy + thd_ddx * dy;
             cord_end = _DefaultCord.shift (cord_end, dx, dy);
             check_flag = 1;
@@ -1613,10 +1614,16 @@ int align_cords (StringSet<String<Dna5> >& genomes,
         else if (_DefaultCord.getCordStrand(cords[i] ^ cords[i + 1]))
         {
             int dx = std::min((int)get_cord_x (cords[i + 1] - cords[i]), thd_max_dshift);
-            int dy = std::min(dx, int(length(read) - get_cord_y(cords[i])));
+            int dy = std::min(dx, int(length(read) - 1 - get_cord_y(cords[i])));
             cord_end = _DefaultCord.shift(cord_end, dx, dy);
             check_flag = 1;
         }
+        if (get_cord_y(cord_start) >= length(read) || get_cord_y(cord_start) >= length(read) ||get_cord_y(cord_end) >= length(read) || get_cord_y(cord_end) >= length(read)|| get_cord_y(cord_start) > get_cord_y(cord_end))
+        {
+            //std::cerr <<"<<<<<<<<<<<<<<< " << i << " " << p << " " << get_cord_y(cords[i]) << " " <<  get_cord_y(cord_start) << " " << length(read) << " " << get_cord_y(cord_end) << " " << _DefaultCord.isBlockEnd(cords[i - 1]) << " " << _DefaultCord.isBlockEnd(cords[i]) << " " << _DefaultCord.getCordStrand (cords[i] ^ cords[i - 1]) << " " << _DefaultCord.getCordStrand (cords[i] ^ cords[i + 1]) << "\n";
+            return 1;
+        }
+        
         int score_align = align_cord (row(aligner, ri), 
                                       row(aligner, ri + 1), 
                                       genomes[g_id], 
@@ -1627,6 +1634,7 @@ int align_cords (StringSet<String<Dna5> >& genomes,
                                       //modified_band
                                       band
                                     );
+
         flag |= clip_head_ (row(aligner, ri), row(aligner, ri + 1), head_end);
         flag |= clip_tail_ (row(aligner, ri), row(aligner, ri + 1), tail_start);
         flag |= check_align_(row(aligner, ri), row(aligner, ri + 1), score_align, check_flag, thd_min_window, thd_min_score);
@@ -1729,7 +1737,7 @@ int align_cords (StringSet<String<Dna5> >& genomes,
     int thd_reject_score = 130;
     int thd_accept_score = 140;
     int thd_accept_density = 16;
-    align_gaps(bam_records, gaps, genomes, read, comrevRead, score_scheme, _gap_parm); 
+    //align_gaps(bam_records, gaps, genomes, read, comrevRead, score_scheme, _gap_parm); 
     return 0;
 }
 
