@@ -100,7 +100,12 @@ struct HitBase
         mask(flag - 1)
         {}
 }_DefaultHitBase;
-
+/**
+ *   struct hit:
+ *   extend the structure Cord;
+ *   NA[2]|strand[1]|head[1]|genome pos[40]|read pos[20]
+ *   NodeType: 1 Head, 0 Body
+ */
 struct Hit
 {
     void setBlockStart(uint64_t &, uint64_t const & = _DefaultHitBase.flag);

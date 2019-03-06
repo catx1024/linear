@@ -853,7 +853,8 @@ inline unsigned getIndexMatchAll(typename PMCore<TDna, TSpec>::Index & index,
 inline unsigned getIndexMatchAll(HIndex<shape_len_base> & index,
                                  String<Dna5> const & read,
                                  String<uint64_t> & set,
-                              MapParm & mapParm)
+                                 float alpha,
+                                 unsigned delta)
 {   
     typedef typename PMCore<TDna, TSpec>::Index TIndex;
     typedef typename TIndex::TShape PShape;
@@ -865,7 +866,7 @@ inline unsigned getIndexMatchAll(HIndex<shape_len_base> & index,
     {
         hashNexth(shape, begin(read) + k);
         uint64_t pre = ~0;
-        if (++dt == mapParm.alpha)
+        if (++dt == alpha)
         {
             if(hashNextX(shape, begin(read) + k) ^ xpre)
             {
@@ -882,7 +883,7 @@ inline unsigned getIndexMatchAll(HIndex<shape_len_base> & index,
             //{
                 //while (_DefaultHs.isBodyYEqual(index.ysa[pos], shape.YValue))
                 uint64_t ptr = _DefaultHs.getHeadPtr(index.ysa[pos-1]);
-                if (ptr < mapParm.delta)
+                if (ptr < delta)
                 //if (_DefaultHs.getHeadPtr(index.ysa[pos-1]) < 1000000)
                 {
           //          unsigned pr = _DefaultHs.getHeadPtr(index.ysa[pos-1]);
@@ -1079,10 +1080,12 @@ inline uint64_t mnMapReadAll(typename PMCore<TDna, TSpec>::Index  & index,
                           typename PMRecord<TDna>::RecSeq & read,
                           Anchors & anchors,
                           MapParm & mapParm,
-                          PMRes::HitString & hit  
+                          PMRes::HitString & hit,  
+                          float thd_alpha,
+                          unsigned thd_delta
                          )
 {
-    getIndexMatchAll<TDna, TSpec>(index, read, anchors.set, mapParm);    
+    getIndexMatchAll<TDna, TSpec>(index, read, anchors.set, thd_alpha, thd_delta);    
     return getAnchorMatchAll(anchors, length(read), mapParm, hit);
 }
 
@@ -1091,10 +1094,12 @@ inline uint64_t mnMapReadFirst(typename PMCore<TDna, TSpec>::Index  & index,
                           typename PMRecord<TDna>::RecSeq & read,
                           Anchors & anchors,
                           MapParm & mapParm,
-                          PMRes::HitString & hit  
+                          PMRes::HitString & hit,  
+                          float thd_alpha,
+                          unsigned thd_delta                          
                          )
 {
-    getIndexMatchAll<TDna, TSpec>(index, read, anchors.set,  mapParm);    
+    getIndexMatchAll<TDna, TSpec>(index, read, anchors.set, thd_alpha, thd_delta);    
     return getAnchorMatchFirst(anchors, length(read), mapParm, hit);
 }
 
@@ -1103,9 +1108,12 @@ inline uint64_t mnMapReadList(typename PMCore<TDna, TSpec>::Index  & index,
                           typename PMRecord<TDna>::RecSeq & read,
                           Anchors & anchors,
                           MapParm & mapParm,
-                          PMRes::HitString & hit)
+                          PMRes::HitString & hit,
+                          float thd_alpha,
+                          unsigned thd_delta
+                        )
 {
-    getIndexMatchAll<TDna, TSpec>(index, read, anchors.set, mapParm);    
+    getIndexMatchAll<TDna, TSpec>(index, read, anchors.set, thd_alpha, thd_delta);    
     //printf("done getinxmatchall\n");
     return getAnchorMatchList(anchors, length(read), mapParm, hit);
 }
