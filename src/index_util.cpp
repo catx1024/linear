@@ -574,7 +574,7 @@ inline void _hsSort(Iterator<String<uint64_t> >::Type const & begin,
 /*
  * serial creat hash array
  */
-inline bool _createHsArray(StringSet<String<Dna5> > const & seq, String<uint64_t> & hs, Shape<Dna5, Minimizer<index_shape_len> > & shape)
+inline bool _createHsArray(StringSet<String<Dna5> > const & seq, String<uint64_t> & hs, LShape & shape)
 {
     double time = sysTime();
     uint64_t preX = ~0;
@@ -637,7 +637,7 @@ inline bool _createHsArray(StringSet<String<Dna5> > const & seq, String<uint64_t
  * creating index only collecting mini hash value [minindex]
  * state::warnning. for seq contains 'N', error. since the k in openmp doesn't change correctly
  */
-inline bool _createHsArray(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, Shape<Dna5, Minimizer<index_shape_len> > & shape, unsigned & threads, bool efficient = true)
+inline bool _createHsArray(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, LShape & shape, unsigned & threads, bool efficient = true)
 {
     double time = sysTime();
     uint64_t hsRealEnd = 0;
@@ -761,7 +761,7 @@ inline bool _createHsArray(StringSet<String<Dna5> >  & seq, String<uint64_t> & h
  * appendvalue instead of resize
  * state::debug succ for seq without 'N', seq containing 'N' not tested 
  */
-inline bool _createHsArray2_MF(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, Shape<Dna5, Minimizer<index_shape_len> > & shape, unsigned & threads)
+inline bool _createHsArray2_MF(StringSet<String<Dna5> >  & seq, String<uint64_t> & hs, LShape & shape, unsigned & threads)
 {
     std::cerr << "[prallel_createHsArray2_MF]\n";
     double time = sysTime();
@@ -770,7 +770,7 @@ inline bool _createHsArray2_MF(StringSet<String<Dna5> >  & seq, String<uint64_t>
     {
         #pragma omp parallel
         {
-            Shape<Dna5, Minimizer<index_shape_len> > tshape = shape; 
+            LShape tshape = shape; 
             String<uint64_t> hsTmp;
             clear(hsTmp);
             uint64_t preX = ~0;
@@ -1366,10 +1366,10 @@ inline bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEm
  * free geonme sequence during creating, for raw map
  */
 inline bool _createQGramIndexDirSA_parallel(StringSet<String<Dna5> > & seq, 
-XString & xstr, String<uint64_t> & hs,  Shape<Dna5, Minimizer<index_shape_len> > & shape, 
+XString & xstr, String<uint64_t> & hs,  LShape & shape, 
 uint64_t & indexEmptyDir, unsigned & threads, bool efficient)    
 {
-    typedef Shape<Dna5, Minimizer<index_shape_len> > ShapeType;
+    typedef LShape ShapeType;
     double time = sysTime();
     //_createHsArray2_MF(seq, hs, shape, threads);
     _createHsArray(seq, hs, shape, threads, efficient);
@@ -1378,9 +1378,9 @@ uint64_t & indexEmptyDir, unsigned & threads, bool efficient)
     return true; 
 }
 inline bool _createQGramIndexDirSA(StringSet<String<Dna5> > const & seq, XString & xstr, 
-String<uint64_t> & hs,  Shape<Dna5, Minimizer<index_shape_len> > & shape, uint64_t & indexEmptyDir)    
+String<uint64_t> & hs, LShape & shape, uint64_t & indexEmptyDir)    
 {
-    typedef Shape<Dna5, Minimizer<index_shape_len> > ShapeType;
+    typedef LShape ShapeType;
     double time = sysTime();
     _createHsArray(seq, hs, shape);
     _createYSA(hs, xstr, indexEmptyDir);

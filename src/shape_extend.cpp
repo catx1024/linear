@@ -108,7 +108,7 @@ inline uint64_t hashInit(LShape & me, TIter const &it)
 /**
  *init for hashNexthS 
  */
-inline uint64_t hashInit_hs(LShape & me, TIter const &it, int d = 0)
+inline uint64_t hashInit_hs(LShape & me, TIter const &it, int d)
 {
     me.hValue = 0;
     for (unsigned i = d; i < me.span - 1 + d; ++i)
@@ -182,7 +182,7 @@ inline uint64_t hashNexth(LShape & me, TIter const &it)
  * only calculate hash value for single strand
  * calculate hValue;
  */ 
-inline typename uint64_t hashNext_hs(LShape &me, TIter const &it)
+inline uint64_t hashNext_hs(LShape &me, TIter const &it)
 {
     uint64_t v2 = ordValue((uint64_t)*(it + me.span - 1 ));
     uint64_t mask = (1ULL << (me.span * 2 - 2)) - 1;

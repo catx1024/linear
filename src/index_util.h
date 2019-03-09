@@ -1,7 +1,7 @@
 #ifndef SEQAN_HEADER_INDEX_UTIL_H
 #define SEQAN_HEADER_INDEX_UTIL_H
 #include <seqan/sequence.h>
-#include <seqan/index.h>
+//#include <seqan/index.h>
 #include "shape_extend.h"
 
 using namespace seqan;
@@ -140,7 +140,7 @@ struct XString
 class HIndex
 {
     public:
-        typedef Shape<Dna5, Minimizer<index_shape_len> > TShape;
+        typedef LShape TShape;
 
         String<HType1>              ysa;
         XString                     xstr;
