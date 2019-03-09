@@ -1,6 +1,8 @@
 //GNode: N/A[1]|xval[32]|strand[1]|coordinate[30]
 #include <utility> 
-#include "index_util.h"
+//#include <seqan/index.h>
+//#include "index_util.h"
+#include "shape_extend.h"
 #include "pmpfinder.h"
 #include "gap.h"
 
@@ -74,7 +76,9 @@ struct GIndex
 };
 
 int g_createDir_(String<Dna5> & seq, uint64_t gs_start, uint64_t gs_end, 
-                String<uint64_t> & g_hs, String<uint64_t> & g_dir, Shape<Dna5, Minimizer<g_shape_len> > & shape)
+                 String<uint64_t> & g_hs, 
+                 String<uint64_t> & g_dir, 
+                 Shape<Dna5, Minimizer<g_shape_len> > & shape)
 {
     hashInit(shape, begin(seq) + gs_start);
     unsigned count = 0; 

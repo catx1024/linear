@@ -1391,7 +1391,6 @@ inline bool createHIndex(StringSet<String<Dna5> > & seq, HIndex & index, unsigne
 {
     return _createQGramIndexDirSA_parallel(seq, index.xstr, index.ysa, index.shape, index.emptyDir, threads, efficient);
 }
-
 inline bool _createQGramIndex(HIndex & index, StringSet<String<Dna5> > & seq, unsigned threads = 1)
 {
     return _createQGramIndexDirSA(seq, index.xstr, index.ysa, index.shape, index.emptyDir);

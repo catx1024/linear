@@ -1,10 +1,6 @@
 #include <seqan/seq_io.h>
 #include <seqan/stream.h>
-#include <seqan/index.h>
-#include <seqan/store.h>
 #include <seqan/basic.h>
-#include <seqan/arg_parse.h>
-#include <seqan/vcf_io.h>
 #include <iostream>
 #include <fstream>
 #include "f_io.h"
