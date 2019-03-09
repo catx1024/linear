@@ -37,7 +37,6 @@ struct GapParm
     Score<int, Simple> thd_clip_scheme;
     GapParm ();
 };
-extern GapParm _gap_parm;
 
 int align_cords (StringSet<String<Dna5> >& genomes,
                  String<Dna5> & read, 

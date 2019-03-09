@@ -866,9 +866,9 @@ inline unsigned getIndexMatchAll(typename LIndex & index,
  * search double strand in one round
  */
 inline unsigned getIndexMatchAll(LIndex & index,
-                               String<Dna5> const & read,
-                              String<uint64_t> & set,
-                              MapParm & mapParm)
+                                 String<Dna5> & read,
+                                 String<uint64_t> & set,
+                                 MapParm & mapParm)
 {   
     typedef LIndex::TShape PShape;
     unsigned dt = 0;

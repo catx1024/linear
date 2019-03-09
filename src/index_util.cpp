@@ -1,4 +1,7 @@
+#include <omp.h>
+#include <seqan/parallel.h>
 #include "index_util.h"
+#include "shape_extend.h"
 
 using namespace seqan;
 
@@ -574,7 +577,7 @@ inline void _hsSort(Iterator<String<uint64_t> >::Type const & begin,
 /*
  * serial creat hash array
  */
-inline bool _createHsArray(StringSet<String<Dna5> > const & seq, String<uint64_t> & hs, LShape & shape)
+inline bool _createHsArray(StringSet<String<Dna5> > & seq, String<uint64_t> & hs, LShape & shape)
 {
     double time = sysTime();
     uint64_t preX = ~0;
@@ -653,7 +656,7 @@ inline bool _createHsArray(StringSet<String<Dna5> >  & seq, String<uint64_t> & h
         uint64_t thd_count = 0; // count number of elements in hs[] for each thread
         #pragma omp parallel reduction(+: thd_count)
         {
-            Shape<Dna5, Minimizer<index_shape_len> > tshape = shape; 
+            LShape tshape = shape; 
             uint64_t preX = ~0;
             int64_t ptr = 0;
             uint64_t size2 = (length(seq[j]) - tshape.span + 1) / threads;
@@ -1377,7 +1380,7 @@ uint64_t & indexEmptyDir, unsigned & threads, bool efficient)
     std::cerr << "  End creating Index Time[s]:" << sysTime() - time << " \n";
     return true; 
 }
-inline bool _createQGramIndexDirSA(StringSet<String<Dna5> > const & seq, XString & xstr, 
+inline bool _createQGramIndexDirSA(StringSet<String<Dna5> > & seq, XString & xstr, 
 String<uint64_t> & hs, LShape & shape, uint64_t & indexEmptyDir)    
 {
     typedef LShape ShapeType;

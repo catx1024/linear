@@ -47,7 +47,7 @@ inline unsigned weight(LShape const &me)
 // ----------------------------------------------------------------------------
 // hashInit() & hashNext()
 // ----------------------------------------------------------------------------
-typedef Iterator<String<Dna5> >::Type TIter; 
+typedef typename Iterator<String<Dna5> >::Type TIter; 
 
 template <unsigned span> 
 struct MASK
@@ -57,20 +57,6 @@ struct MASK
 
 static const uint64_t COMP4 = 3;
 static const int  ordC = 3;
-
-inline void hashInit(LShape & me, TIter const &it)
-{
-
-    SEQAN_ASSERT_GT((unsigned)me.span, 0u);
-
-    me.leftChar = 0;
-    me.hValue = 0;
-    for (unsigned i = 0; i < me.span - 1; ++i)
-    {
-        me.hValue = (me.hValue << 2) + ordValue((TValue)*(it + i));
-    }
-    me.x = 0;
-}
 
 inline uint64_t hashInit(LShape & me, TIter const &it)
 {

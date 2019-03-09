@@ -1,8 +1,10 @@
 #include <utility> 
 #include "pmpfinder.h"
 #include "align_interface.h"
-//TODO seqand::setclippedpositoin retrieve source postion that's not efficient
+
 using namespace seqan;
+//TODO seqand::setclippedpositoin retrieve source postion that's not efficient
+
 /**
  * seqan::view coordinate and source coordinate transformation NOTES
  * setClippedBeginPosition(row1, c1)
@@ -24,7 +26,7 @@ uint16_t bam_flag_suppl = 2048;
 typedef Align<String<Dna5>, ArrayGaps> TAlign;
 typedef Row<TAlign>::Type TRow; 
 typedef Iterator<TRow>::Type TRowIterator;
-extern GapParm _gap_parm;
+GapParm _gap_parm;
 uint64_t emptyCord = ~0;
 /*
  * Structure of recods of start and end coordinates with aligner of gaps
