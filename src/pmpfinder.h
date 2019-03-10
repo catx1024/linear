@@ -153,7 +153,7 @@ struct Hit
 };
 extern Hit _DefaultHit;
 
-uint64_t mnMapReadList( LIndex  & index,
+uint64_t mnMapReadList( HIndex  & index,
                         String<Dna5> & read,
                         Anchors & anchors,
                         MapParm & mapParm,

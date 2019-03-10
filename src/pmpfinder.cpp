@@ -781,7 +781,7 @@ void _printHit(String<uint64_t>  & hit)
 //===!Note:Need to put this parameterin the mapper threshold
 /*
 template <typename TDna, typename TSpec>
-inline unsigned getIndexMatchAll(typename LIndex & index,
+inline unsigned getIndexMatchAll(typename HIndex & index,
                               typename String<Dna5> const & read,
                               uint64_t* const set,
                               unsigned & len,
@@ -820,14 +820,14 @@ inline unsigned getIndexMatchAll(typename LIndex & index,
 */
 /*
 template <typename TDna, typename TSpec>
-inline unsigned getIndexMatchAll(typename LIndex & index,
+inline unsigned getIndexMatchAll(typename HIndex & index,
                               typename String<Dna5> const & read,
                               uint64_t* const set,
                               unsigned & len,
                               MapParm & mapParm
                              )
 {   
-    typedef typename LIndex TIndex;
+    typedef typename HIndex TIndex;
     typedef typename TIndex::TShape PShape;
     
     unsigned block = (mapParm.blockSize < length(read))?mapParm.blockSize:length(read);
@@ -865,12 +865,12 @@ inline unsigned getIndexMatchAll(typename LIndex & index,
 /**
  * search double strand in one round
  */
-inline unsigned getIndexMatchAll(LIndex & index,
+inline unsigned getIndexMatchAll(HIndex & index,
                                  String<Dna5> & read,
                                  String<uint64_t> & set,
                                  MapParm & mapParm)
 {   
-    typedef LIndex::TShape PShape;
+    typedef HIndex::TShape PShape;
     unsigned dt = 0;
     PShape shape;
     uint64_t xpre = 0;
@@ -1088,7 +1088,7 @@ inline uint64_t getAnchorMatchList(Anchors & anchors, unsigned const & readLen, 
     }
 }
 
-inline uint64_t mnMapReadAll( LIndex  & index,
+inline uint64_t mnMapReadAll( HIndex  & index,
                            String<Dna5> & read,
                           Anchors & anchors,
                           MapParm & mapParm,
@@ -1099,7 +1099,7 @@ inline uint64_t mnMapReadAll( LIndex  & index,
     return getAnchorMatchAll(anchors, length(read), mapParm, hit);
 }
 
-inline uint64_t mnMapReadFirst( LIndex  & index,
+inline uint64_t mnMapReadFirst( HIndex  & index,
                            String<Dna5> & read,
                           Anchors & anchors,
                           MapParm & mapParm,
@@ -1110,7 +1110,7 @@ inline uint64_t mnMapReadFirst( LIndex  & index,
     return getAnchorMatchFirst(anchors, length(read), mapParm, hit);
 }
 
-inline uint64_t mnMapReadList( LIndex  & index,
+inline uint64_t mnMapReadList( HIndex  & index,
                            String<Dna5> & read,
                           Anchors & anchors,
                           MapParm & mapParm,
@@ -1598,7 +1598,7 @@ inline bool path_dst(
  * this mapping function use the hash value of double strand 
  * that allow to stream the sequence of double strand for only once
  */
-int rawMap_dst( LIndex   & index,
+int rawMap_dst( HIndex   & index,
              StringSet<String<Dna5> > & reads,
              StringSet<String<Dna5> > & genomes, 
             MapParm & mapParm,

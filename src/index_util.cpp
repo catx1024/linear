@@ -1390,7 +1390,7 @@ String<uint64_t> & hs, LShape & shape, uint64_t & indexEmptyDir)
     std::cerr << "  End creating Index Time[s]:" << sysTime() - time << " \n";
     return true; 
 }
-inline bool createHIndex(StringSet<String<Dna5> > & seq, HIndex & index, unsigned & threads, bool efficient)
+ bool createHIndex(StringSet<String<Dna5> > & seq, HIndex & index, unsigned & threads, bool efficient)
 {
     return _createQGramIndexDirSA_parallel(seq, index.xstr, index.ysa, index.shape, index.emptyDir, threads, efficient);
 }

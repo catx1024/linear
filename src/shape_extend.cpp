@@ -49,12 +49,6 @@ inline unsigned weight(LShape const &me)
 // ----------------------------------------------------------------------------
 typedef typename Iterator<String<Dna5> >::Type TIter; 
 
-template <unsigned span> 
-struct MASK
-{
-    static const uint64_t VALUE = (1ULL << span) - 1;
-};
-
 static const uint64_t COMP4 = 3;
 static const int  ordC = 3;
 

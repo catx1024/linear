@@ -42,7 +42,7 @@
 class Mapper {
     PMRecord      record;
     MapParm     parm;
-    LIndex      qIndex;
+    HIndex      qIndex;
     StringSet<String<uint64_t> > cordSet;
     std::ofstream of;
     unsigned _thread;
@@ -57,7 +57,7 @@ public:
     StringSet<String<Dna5> > & reads() {return record.seq1;}             
     StringSet<String<Dna5> > & genomes() {return record.seq2;}             
     MapParm & mapParm() {return parm;}
-    LIndex & index() {return qIndex;}
+    HIndex & index() {return qIndex;}
     StringSet<String<uint64_t> > & cords() {return cordSet;}            //returns cord set 
     
     void printCords(std::ostream & );
