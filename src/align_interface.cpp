@@ -81,7 +81,7 @@ void setClippedPositions(TRow & row1, TRow & row2, int beginPos, int endPos)
  *  return score of two chars
  */
 //static float ln[10] = {1,2,}
-inline int getScore_(char r1_char,
+ int getScore_(char r1_char,
                      char r2_char,
                      int k,
                      int & x
@@ -107,7 +107,7 @@ inline int getScore_(char r1_char,
     }
     return x;
 }
-inline int getScore_(TRowIterator & it1,
+ int getScore_(TRowIterator & it1,
                      TRowIterator & it2,
                      int k,
                      int & x
@@ -138,13 +138,13 @@ inline int getScore_(TRowIterator & it1,
     return x;
 }
 
-inline int cumulate_match_sc__ (int l, int s)
+ int cumulate_match_sc__ (int l, int s)
 {
     int j = 5;
     int maxk = 5;
     return std::min((l / j + 1), maxk) * s;
 }
-inline int cumulate_gap_sc__ (int l, int s)
+ int cumulate_gap_sc__ (int l, int s)
 {
     int j = 2;
     int maxk = 5;
@@ -155,7 +155,7 @@ inline int cumulate_gap_sc__ (int l, int s)
  * bit:= 0 continuse, 1 seg breakpoint
  * type:= match 0, mismatch 2, ins 4, del 8, gap open 16
  */
-inline int getScore2_(TRowIterator & it1,
+ int getScore2_(TRowIterator & it1,
                      TRowIterator & it2,
                      Score<int, Simple> score_scheme,
                      int & l1, //match
@@ -242,7 +242,7 @@ inline int getScore2_(TRowIterator & it1,
     }
     return x;
 }
-inline int getScore2_(TRowIterator & it1,
+ int getScore2_(TRowIterator & it1,
                      TRowIterator & it2,
                      Score<int, Simple> score_scheme,
                      String<int> & ls,
@@ -263,7 +263,7 @@ inline int getScore2_(TRowIterator & it1,
 /*
  * insert cigar to the original cigar 
  */
-int inline insertBamRecordCigar (BamAlignmentRecord & bam_record,
+int  insertBamRecordCigar (BamAlignmentRecord & bam_record,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                     int pos = -1
@@ -287,7 +287,7 @@ int inline insertBamRecordCigar (BamAlignmentRecord & bam_record,
     }
     return 0;
 }
-int inline insertNewBamRecord (String<BamAlignmentRecordLink> & bam_records,
+int  insertNewBamRecord (String<BamAlignmentRecordLink> & bam_records,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                     int g_id,
@@ -317,7 +317,7 @@ int inline insertNewBamRecord (String<BamAlignmentRecordLink> & bam_records,
     }
     return 0;
 }
-int inline insertNewEmptyBamRecord (String<BamAlignmentRecordLink> & bam_records,
+int  insertNewEmptyBamRecord (String<BamAlignmentRecordLink> & bam_records,
                                 int g_id,
                                 int g_beginPos,
                                 int strand,
@@ -347,7 +347,7 @@ int inline insertNewEmptyBamRecord (String<BamAlignmentRecordLink> & bam_records
 /*
  * Cigar from the row1 and row2 are inserted to the cigar from the bam_record
  */
-int inline insertBamRecord (BamAlignmentRecord & bam_record,
+int  insertBamRecord (BamAlignmentRecord & bam_record,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                     int g_id,
@@ -471,7 +471,7 @@ void printCigar(String<CigarElement< > > &cigar)
     }
     std::cout << "\n";
 }
-inline int align_block (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
+ int align_block (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                         Row<Align<String<Dna5>, ArrayGaps> >::Type & row2,
                         String<Dna5> & genome,
                         String<Dna5> & read,
@@ -875,7 +875,7 @@ int merge_align_(Row<Align<String<Dna5>,ArrayGaps> >::Type & row11,
     return flag;
 }
 
-inline void insertGaps(GapRecords & gaps,
+ void insertGaps(GapRecords & gaps,
                   uint64_t cord1,    //start coordinate of gap
                   uint64_t cord2,    //end coordinate of gap
                   int bam_segs_id,
@@ -908,7 +908,7 @@ inline void insertGaps(GapRecords & gaps,
     gaps.dy = dy_;
 }
 
-inline void insertGaps(GapRecords & gaps,
+ void insertGaps(GapRecords & gaps,
                   uint64_t cord1,    //start coordinate of gap
                   uint64_t cord2, // end coordinate
                   Row<Align<String<Dna5>, ArrayGaps> >::Type & row11,
@@ -950,7 +950,7 @@ inline void insertGaps(GapRecords & gaps,
     gaps.dx = dx_;
     gaps.dy = dy_;
 }
-inline void _nextView2Src (Iterator<Row<Align<String<Dna5>, ArrayGaps>>::Type>::Type & it1,
+ void _nextView2Src (Iterator<Row<Align<String<Dna5>, ArrayGaps>>::Type>::Type & it1,
                     Iterator<Row<Align<String<Dna5>, ArrayGaps>>::Type>::Type & it2, 
                     int64_t & src1, 
                     int64_t & src2)
@@ -1876,7 +1876,7 @@ int clip_window_(Align<String<Dna5>,ArrayGaps> & aligner,
  * direction: clip direction  > 0  -----------mmmmmmmmm,  < 0 mmmmmmmmmmm--------; 
  * where 'm' is match
  */
-inline uint64_t clip_window (String<Dna5> & genome,
+ uint64_t clip_window (String<Dna5> & genome,
 	                         String<Dna5> & read,
 	                         String<Dna5> & comrevRead,
 	                         uint64_t genomeId,

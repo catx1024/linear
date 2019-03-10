@@ -49,6 +49,7 @@
 #include <functional>   // for std::ref()
 #include <ctime>
 #include "mapper.h"
+#include "shape_util.h"
 #include "pmpfinder.h"
 #include "gap.h"
 #include "align_interface.h"
@@ -618,17 +619,13 @@ int main(int argc, char const ** argv)
     if (res != seqan::ArgumentParser::PARSE_OK)
         return res == seqan::ArgumentParser::PARSE_ERROR;
     std::cerr << "Encapsulated version: Mapping reads efficiently" << std::endl;
-    //Mapper mapper(options);
-    //omp_set_num_threads(mapper.thread());
-    //map(mapper, options.p1);
-    String<Dna5> r1="acgt";
-    String<Dna5> r2;
-    _compltStr (r1,r2);
-    std::cout << r2 << "\n";
+    Mapper mapper(options);
+    omp_set_num_threads(mapper.thread());
+    map(mapper, options.p1);
     //mapper.print_vcf();
-    //std::cerr << "  Result Files: \033[1;31m" << options.oPath << "\033[0m" << std::endl;
-    //std::cerr << "                \033[1;31m" << (mapper.getOutputPrefix() + ".gvf") << "\033[0m" << std::endl;
-    //std::cerr << "                \033[1;31m" << (mapper.getOutputPrefix() + ".sam") << "\033[0m" << std::endl;
-    //std::cerr << "Time in sum[s] " << sysTime() - time << std::endl;
+    std::cerr << "  Result Files: \033[1;31m" << options.oPath << "\033[0m" << std::endl;
+    std::cerr << "                \033[1;31m" << (mapper.getOutputPrefix() + ".gvf") << "\033[0m" << std::endl;
+    std::cerr << "                \033[1;31m" << (mapper.getOutputPrefix() + ".sam") << "\033[0m" << std::endl;
+    std::cerr << "Time in sum[s] " << sysTime() - time << std::endl;
     return 0;
 }

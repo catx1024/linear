@@ -1,28 +1,8 @@
 #ifndef LINEAR_HEADER_SHAPE_EXTEND_H
 #define LINEAR_HEADER_SHAPE_EXTEND_H
 #include <utility>
-//#include <seqan/basic.h>
-//#include <seqan/stream.h>
 #include <seqan/sequence.h>
 using namespace seqan;
-
-struct MiniValueBit
-{
-    enum{VALUEBIT = 64};
-};
-
-struct MiniHEX{               
-    enum {HEX = 8 };
-};
-
-template <unsigned shapeLength>
-struct MiniWeight{
-    enum{ WEIGHT = shapeLength - MiniHEX::HEX};
-};
-
-template <unsigned TSPAN, unsigned TWEIGHT = MiniWeight<TSPAN>::WEIGHT, typename TSpec = void>
-struct Minimizer;
-typedef Minimizer<0, 0> SimpleMShape;
 
 class LShape
 {
@@ -36,7 +16,7 @@ public:
     THashValue XValue;     //minimizer 
     THashValue YValue;     //Y(h,x)
     THashValue strand;
-    int  leftChar;
+    int leftChar;
     int x;
 
     LShape();

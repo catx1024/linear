@@ -2,7 +2,7 @@
 #define SEQAN_HEADER_INDEX_UTIL_H
 #include <seqan/sequence.h>
 //#include <seqan/index.h>
-#include "shape_extend.h"
+#include "shape_util.h"
 
 using namespace seqan;
 typedef uint64_t HType1;

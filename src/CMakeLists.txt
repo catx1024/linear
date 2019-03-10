@@ -45,6 +45,7 @@ add_definitions (-DSEQAN_DATE="${SEQAN_DATE}")
 
 
 add_library(linear_base STATIC base.cpp)
+add_library(linear_shape_util STATIC shape_util.cpp)
 add_library(linear_index_util STATIC index_util.cpp)
 add_library(linear_pmpfinder STATIC pmpfinder.cpp)
 add_library(linear_gap STATIC gap.cpp)
@@ -52,7 +53,7 @@ add_library(linear_fio STATIC f_io.cpp)
 add_library(linear_align_interface STATIC align_interface.cpp)
 
 add_executable (linear mapper.cpp mapper.h base.h index_util.h pmpfinder.h gap.h align_interface.h f_io.h) 
-target_link_libraries (linear ${SEQAN_LIBRARIES} linear_base linear_index_util linear_pmpfinder linear_gap linear_fio linear_align_interface)
+target_link_libraries (linear ${SEQAN_LIBRARIES} linear_base linear_shape_util linear_index_util linear_pmpfinder linear_gap linear_fio linear_align_interface)
 
 add_library(libt STATIC libt.cpp)
 add_executable (t1 t1.cpp)
