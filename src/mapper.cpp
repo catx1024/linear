@@ -238,7 +238,7 @@ int print_align_sam (Mapper & mapper)
                             mapper.getOf()
                            );
     print_align_sam_record_(mapper.getBamRecords(),
-                            mapper.cords(),
+                            mapper.getCords(),
                             mapper.readsId(),
                             mapper.genomesId(),
                             mapper.getOf()
@@ -279,9 +279,8 @@ void Mapper::printCordsRaw()
 /**
  * print all cords with cordinates
  */
-void Mapper::printCordsRaw2()
+void Mapper::printCordsRaw2(int flag_close)
 {
-    std::cerr << ">>Write results to disk        \r";
     double time = sysTime();
     unsigned cordCount = 0;
     CharString first_line = "";
@@ -355,9 +354,7 @@ void Mapper::printCordsRaw2()
                 {
                     d = (int64_t)_DefaultCord.getCordX(cordSet[k][j]) - (int64_t)_DefaultCord.getCordX(cordSet[k][j - 1]);
                     d2 = (int64_t)_DefaultCord.getCordY(cordSet[k][j]) - (int64_t)_DefaultCord.getCordY(cordSet[k][j - 1]);
-                    
                 }
-                
                 of  << mark  << _DefaultCord.getCordY(cordSet[k][j]) << " " 
                     << _getSA_i2(_DefaultCord.getCordX(cordSet[k][j])) << " " << d2 << " " << d << " " << j << " \n";
                 cordCount++;
@@ -365,7 +362,10 @@ void Mapper::printCordsRaw2()
             }
         }
     }
-    close(of);
+    if (flag_close)
+    {
+        close(of);
+    }
     std::cerr << "--Write results to disk       100% Elapsed Time[s] " << sysTime() - time << std::endl;
 }
 
@@ -448,12 +448,12 @@ int print_clip_gvf(Mapper & mapper)
 
 int rawMap_dst2_MF(LIndex & index,
                    StringSet<String<short> > & f2,
+                   StringSet<String<Dna5> > & seqs,
                    StringSet<String<Dna5> > & reads,
-                   MapParm & mapParm,
                    StringSet<String<uint64_t> > & cords,
                    StringSet<String<uint64_t> > & clips,
-                   StringSet<String<Dna5> > & seqs,
                    StringSet<String<BamAlignmentRecordLink> >& bam_records,
+                   MapParm & mapParm,
                    unsigned & threads,
                    int p1
                   )
@@ -565,34 +565,46 @@ int map(Mapper & mapper, int p1)
     dotstatus[0] = ".   ";
     dotstatus[1] = "..  ";
     dotstatus[2] = "... ";
+    int thd_write_blocks = 10;
+    int block_count = 0;
     while (!atEnd(rFile))
     {
-        double time1 = sysTime();
-        clear (mapper.reads());
-        std::cerr <<  ">>Map::file_I/O  block " << k << dotstatus[j++ % length(dotstatus)] << "\r";
-        readRecords_block(mapper.readsId(), mapper.reads(), mapper.readLens(), rFile, blockSize);
-        std::cerr << "                                    \r";
-        std::cerr <<  ">>Map::mapping  block "<< k << " Size " << length(mapper.reads()) << " " << dotstatus[j++ % length(dotstatus)] << "\r";
-        time1 = sysTime() - time1;
-        double time2 = sysTime();
-        rawMap_dst2_MF(mapper.index(), 
-                       f2, 
-                       mapper.reads(), 
-                       mapper.mapParm(), 
-                       mapper.cords(), 
-                       mapper.getClips(),
-                       mapper.genomes(),
-                       mapper.getBamRecords(),
-                       mapper.thread(), 
-                       p1);
-        time2 = sysTime() - time2;
-        std::cerr <<  "--Map::file_I/O+Map block "<< k << " Size " << length(mapper.reads()) << " Elapsed Time[s]: file_I/O " << time1 << " map "<< time2 << "\n";
-        k++;
+        while (block_count < thd_write_blocks)
+        {
+            double time1 = sysTime();
+            clear (mapper.reads());
+            std::cerr <<  ">>Map::file_I/O  block " << k << dotstatus[j++ % length(dotstatus)] << "\r";
+            readRecords_block(mapper.readsId(), mapper.reads(), mapper.readLens(), rFile, blockSize);
+            std::cerr << "                                    \r";
+            std::cerr <<  ">>Map::mapping  block "<< k << " Size " << length(mapper.reads()) << " " << dotstatus[j++ % length(dotstatus)] << "\r";
+            time1 = sysTime() - time1;
+            double time2 = sysTime();
+            rawMap_dst2_MF(mapper.index(), 
+                           f2, 
+                           mapper.genomes(),
+                           mapper.reads(), 
+                           mapper.getCords(), 
+                           mapper.getClips(),
+                           mapper.getBamRecords(),
+                           mapper.mapParm(), 
+                           mapper.thread(), 
+                           p1);
+            time2 = sysTime() - time2;
+            std::cerr <<  "--Map::file_I/O+Map block "<< k << " Size " << length(mapper.reads()) << " Elapsed Time[s]: file_I/O " << time1 << " map "<< time2 << "\n";
+            k++;
+        }
+        std::cerr << ">> Write results to disk        \r";
+        mapper.printCordsRaw2();
+        //print_align_sam(mapper);
+        //print_clip_gvf(mapper);
+        clear (mapper.getCords());
+        clear (mapper.getBamRecords());
+        clear (mapper.getClips());
+
+        block_count = 0;
     }
+    close(mapper.getOf());
     mapper.index().clear(); 
-    mapper.printCordsRaw2();
-    print_align_sam(mapper);
-    print_clip_gvf(mapper);
     return 0;
 }
 int main(int argc, char const ** argv)

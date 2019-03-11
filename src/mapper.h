@@ -58,11 +58,11 @@ public:
     StringSet<String<Dna5> > & genomes() {return record.seq2;}             
     MapParm & mapParm() {return parm;}
     LIndex & index() {return qIndex;}
-    StringSet<String<uint64_t> > & cords() {return cordSet;}            //returns cord set 
+    StringSet<String<uint64_t> > & getCords() {return cordSet;}            //returns cord set 
     
     void printCords(std::ostream & );
-    void printCordsRaw();
-    void printCordsRaw2();
+    void printCordsRaw(int = 0); //0:not close of 1:close of 
+    //void printCordsRaw2();
     int print_vcf();
     int createIndex(bool = false);
     unsigned sens(){return parm.sensitivity;}
