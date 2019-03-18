@@ -2,7 +2,6 @@
 #define SEQAN_HEADER_INDEX_UTIL_H
 #include <seqan/parallel.h>
 #include <seqan/sequence.h>
-//#include <seqan/index.h>
 #include "shape_extend.h"
 
 using namespace seqan;
