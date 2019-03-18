@@ -215,17 +215,6 @@ int print_align_sam_record_(StringSet<String< BamAlignmentRecordLink> > & record
             records[i][j].qName = readsId[i];
             CharString g_id = genomesId[records[i][j].rID];
             int dt = writeSam(of, records[i], j, g_id);
-            //<<<debug 
-        }
-
-        for (int j = 0; j < length(records[i]); j++)
-        {
-            std::pair<int,int> lens;
-            lens = countCigar(records[i][j].cigar);
-            if (records[i][j].isEnd())
-                std::cout << "\n";
-            std::cout << "cigarLen " << lens.first << " " << lens.second << "\n";
-            //>>>debug
         }
     }
 }
@@ -510,6 +499,7 @@ int64_t len = 0;
     #pragma omp for
     for (unsigned j = 0; j < length(reads); j++)
     {
+        std::cout << "rdm " << j << "\n";
         if (length(reads[j]) >= mapParm.minReadLen)
         {
             red_len[thd_id] += length(reads[j]);
