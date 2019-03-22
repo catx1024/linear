@@ -875,7 +875,7 @@ int merge_align__(Row<Align<String<Dna5>,ArrayGaps> >::Type & row11,
     }
     if (endPosition(row12) < beginPosition(row22) + delta2)
     {
-        return 1|64;
+        return 1|4096;
     }
     if (beginPosition(row11) > beginPosition(row21) + delta1)
     {
@@ -1540,16 +1540,12 @@ int align_cords (StringSet<String<Dna5> >& genomes,
     uint64_t bam_start;
     uint64_t bam_strand;
     int check_flag = 0;
-    int flag_clip = 0;
-    int flag_clip_pre = flag_clip;
     TRow rt1, rt2;
     for (int i = 1; i < (int)length(cords); i++)
 //<<<debug
 //    for (int i = 2; i < (int)length(cords); i++)
 //>>>debug
     {
-        flag_pre = flag;
-        flag = 0;
         check_flag = 0;
         g_id = get_cord_id(cords[i]);
         g_beginPos = get_cord_x (cords[i]);
@@ -1594,17 +1590,25 @@ int align_cords (StringSet<String<Dna5> >& genomes,
              | check_align_(rstr[ri], rstr[ri + 1], score_align, check_flag, thd_min_window, thd_min_score);
         //TODO!!check_align for first or last cord are differnet from middle cords
         if (flag){
+            gap_str_cord = shift_cord(pre_cord_start,
+                                      beginPosition(rstr[ri_pre]),
+                                      beginPosition(rstr[ri_pre + 1]));
+            //pre_cord_start = cord_start;
+            //pre_cord_end = cord_end;
+            //flag_pre = flag;
+            //std::swap (ri, ri_pre);
             continue; //alignment quality check, drop poorly aligned 
         }
         if (_DefaultCord.isBlockEnd(pre_cord_start))
         {
-            clip_segs(rstr[i], rstr[ri + 1], cord_start, _gap_parm, -1);
-            flag_clip |= flag_clip_head;
+            clip_segs(rstr[ri], rstr[ri + 1], cord_start, _gap_parm, -1);
             insertNewBamRecord(bam_records, g_id,
                             get_cord_x(cord_start) + beginPosition(rstr[ri]),
                             get_cord_strand(cords[i]));
             pre_cord_start = cord_start;
             pre_cord_end = cord_end;
+            flag = 0;
+            flag_pre = 0;
             std::swap (ri, ri_pre); 
             continue;
         } 
@@ -1613,10 +1617,8 @@ int align_cords (StringSet<String<Dna5> >& genomes,
             flag = merge_align_(rstr[ri_pre], rstr[ri_pre + 1], 
                     rstr[ri], rstr[ri + 1], pre_cord_start, cord_start );
         }
-        bam_start = get_cord_x(pre_cord_start) 
-                         + beginPosition(rstr[ri_pre]);
-        bam_strand = strand?(bam_flag_rvcmp | bam_flag_suppl):        
-                                   bam_flag_suppl; 
+        bam_start = get_cord_x(pre_cord_start) + beginPosition(rstr[ri_pre]);
+        bam_strand = get_cord_strand(pre_cord_start); 
         if (!flag_pre)
         {
             if (!flag)
@@ -1722,6 +1724,8 @@ int align_cords (StringSet<String<Dna5> >& genomes,
                                    g_id, bam_start, bam_strand);  
             }
         }
+        flag_pre = flag;
+        flag = 0;
         pre_cord_start = cord_start;
         pre_cord_end = cord_end;
         std::swap (ri, ri_pre); //swap the current and pre row id in the aligner.
