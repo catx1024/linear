@@ -83,7 +83,6 @@ struct Cord
     uint64_t cell2Cord(uint64_t const & cell, 
                 unsigned const & bit = _DefaultCordBase.cell_bit) const;
     void setCordEnd(uint64_t & cord,
-            typename CordBase::Flag const & strand = _DefaultCordBase.flag_strand,
             typename CordBase::Flag const & end = _DefaultCordBase.flag_end);
     uint64_t getCordStrand(uint64_t const & cord,
             unsigned const & strand = _DefaultCordBase.flag_bit) const;
@@ -135,6 +134,8 @@ uint64_t get_cord_id (uint64_t);
 uint64_t create_id_x (uint64_t, uint64_t);
 uint64_t create_cord (uint64_t, uint64_t, uint64_t, uint64_t);
 uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y);
+void set_cord_end (uint64_t &); 
+
 
 unsigned _windowDist(Iterator<String<short> >::Type const &, 
                      Iterator<String<short> >::Type const &);
@@ -152,5 +153,7 @@ int extendPatch(StringSet<String<short> > & f1,
                 int k,
                 uint64_t cord1,
                 uint64_t cord2,
-                int revscomp_const);
+                int revscomp_const,
+                int overlap_size = window_size,
+                int gap_size = window_size);
 #endif

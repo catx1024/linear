@@ -112,10 +112,9 @@ uint64_t Cord::cord2Cell(uint64_t const & cord,
 }
 
 void Cord::setCordEnd(uint64_t & cord,
-            typename CordBase::Flag const & strand,
             typename CordBase::Flag const & end)
 {
-    cord |= strand | end;
+    cord |= end;
 }
 
 typename CordBase::Flag Cord::getCordStrand(uint64_t const & cord,
@@ -155,7 +154,6 @@ bool Cord::isCordsOverlap(uint64_t & val1, uint64_t & val2, int64_t thd)
 {
     int64_t dx = _DefaultCord.getCordX(val2 - val1);
     int64_t dy = get_cord_y(val2 - val1);
-    //std::cout << "[]::isCordsOverlap " << dx << " " << dy << " " << _DefaultCord.getCordX(val2) << " " << _DefaultCord.getCordX(val1) << " " << thd << "\n";
     return (dx >= 0) && (dx < thd) && (dy >= 0) && (dy < thd);
 }
 
@@ -168,6 +166,7 @@ uint64_t get_cord_x (uint64_t val) {return _getSA_i2(_DefaultCord.getCordX(val))
 uint64_t get_cord_y (uint64_t val) {return _DefaultCord.getCordY(val);}
 uint64_t get_cord_strand (uint64_t val) {return _DefaultCord.getCordStrand(val);}
 uint64_t get_cord_id (uint64_t val) {return _getSA_i1(_DefaultCord.getCordX(val));}
+void set_cord_end (uint64_t & val) {_DefaultCord.setCordEnd(val);}
 uint64_t create_id_x(uint64_t const id, uint64_t const x)
 {
     return (id << _DefaultCordBase.bit_id) + x;
@@ -183,8 +182,8 @@ void cmpRevCord(uint64_t val1,
                     uint64_t & cr_val2,
                     uint64_t read_len)
 {
-    cr_val1 = (val1 - get_cord_y(val1) + read_len - get_cord_y(val2)) ^ _DefaultCordBase.flag_strand;
-    cr_val2 = (val2 - get_cord_y(val1) + read_len - get_cord_y(val2)) ^ _DefaultCordBase.flag_strand;
+    cr_val1 = (val1 - get_cord_y(val1) + read_len - get_cord_y(val2) - 1) ^ _DefaultCordBase.flag_strand;
+    cr_val2 = (val2 - get_cord_y(val1) + read_len - get_cord_y(val2) - 1) ^ _DefaultCordBase.flag_strand;
 }
 uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y)
 {
@@ -821,67 +820,16 @@ template <typename TDna, typename TSpec>
 }
 */
 
- unsigned getIndexMatchAll(DIndex & index,
-                           String<Dna5> & read,
-                           String<uint64_t> & set,
-                           MapParm & mapParm)
-{   
-    unsigned dt = 0;
-    LShape shape(index.shape);
-    uint64_t xpre = 0;
-    hashInit(shape, begin(read));
-    for (unsigned k = 0; k < length(read); k++)
-    {
-        hashNexth(shape, begin(read) + k);
-        uint64_t pre = ~0;
-        if (++dt == mapParm.alpha)
-        {
-            if(hashNextX(shape, begin(read) + k) ^ xpre)
-            {
-                xpre = shape.XValue;
-                uint64_t pos = getXDir(index, shape.XValue, shape.YValue);
-                uint64_t ptr = _DefaultHs.getHeadPtr(index.ysa[pos-1]);
-                if (ptr < mapParm.delta)
-                {
-                    while ((_DefaultHs.getHsBodyY(index.ysa[pos]) == shape.YValue || _DefaultHs.getHsBodyY(index.ysa[pos]) == 0))
-                    {
-                        if (_DefaultHs.getHsBodyS(pre - index.ysa[pos]) > mapParm.kmerStep)
-                        {
-                            if (((index.ysa[pos] & _DefaultHsBase.bodyCodeFlag) >>_DefaultHsBase.bodyCodeBit) ^ shape.strand)
-                            {
-                                
-                                appendValue(set, (((_DefaultHs.getHsBodyS(index.ysa[pos]) - length(read) + 1 + k) << 20) +  (length(read) - 1 - k)) | _DefaultHitBase.flag2);
-                                
-                            }
-                            else
-                            {     
-
-                                appendValue(set, ((_DefaultHs.getHsBodyS(index.ysa[pos]) - k) << 20) | k);
-                            }
-                            pre = index.ysa[pos];
-                        }
-                        if (++pos > length(index.ysa) - 1)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-            dt = 0;
-        }
-    }
-    return 0;
-}
-
 /**
- * search double strand in one round
+ * Search double strand pattern in the index and
+ * append to anchors
  */
  unsigned getIndexMatchAll(LIndex & index,
                            String<Dna5> & read,
                            String<uint64_t> & set,
                            MapParm & mapParm)
 {   
-    unsigned dt = 0;
+    int dt = 0;
     LShape shape(index.shape);
     uint64_t xpre = 0;
     hashInit(shape, begin(read));
@@ -891,55 +839,42 @@ template <typename TDna, typename TSpec>
         uint64_t pre = ~0;
         if (++dt == mapParm.alpha)
         {
+            dt = 0;
             if(hashNextX(shape, begin(read) + k) ^ xpre)
             {
                 xpre = shape.XValue;
                 uint64_t pos = getXDir(index, shape.XValue, shape.YValue);
-//!Note: The contition is different from single strand \
-         which will slightly changes the senstivity.\
-         Specifically, in the single strand index, if the size of the block is > mapParm.delta, \
-         then the block of the ysa will not be used. \
-         While in double strand index, the length of ysa of fixed value includes kmer \
-         of f both + and - strands.
-
-        // if (_DefaultHs.getHsBodyY(index.ysa[std::min(pos + mapParm.delta, length(index.ysa) - 1)]) ^ shape.YValue)
-            //{
-                //while (_DefaultHs.isBodyYEqual(index.ysa[pos], shape.YValue))
                 uint64_t ptr = _DefaultHs.getHeadPtr(index.ysa[pos-1]);
-                if (ptr < mapParm.delta)
-                //if (_DefaultHs.getHeadPtr(index.ysa[pos-1]) < 1000000)
+                if (index.isEmptyDir(pos) || ptr >= mapParm.delta)
                 {
-          //          unsigned pr = _DefaultHs.getHeadPtr(index.ysa[pos-1]);
-                    //while (_DefaultHs.isBody(index.ysa[pos]))
-                    while ((_DefaultHs.getHsBodyY(index.ysa[pos]) == shape.YValue || _DefaultHs.getHsBodyY(index.ysa[pos]) == 0))
+                    dt = 0;
+                    continue;
+                }
+                while ((_DefaultHs.getHsBodyY(index.ysa[pos]) == shape.YValue || 
+                        _DefaultHs.getHsBodyY(index.ysa[pos]) == 0))
+                {
+                    if (_DefaultHs.getHsBodyS(pre - index.ysa[pos]) > mapParm.kmerStep)
                     {
-    //!Note: needs change
-    //!Note: the sa is in reverse order in hindex. this is different from the generic index
-                        if (_DefaultHs.getHsBodyS(pre - index.ysa[pos]) > mapParm.kmerStep)
+                        if (((index.ysa[pos] & _DefaultHsBase.bodyCodeFlag) >>_DefaultHsBase.bodyCodeBit) ^ shape.strand)
                         {
-                            //[COMT]::condition of complement reverse strand
-                            if (((index.ysa[pos] & _DefaultHsBase.bodyCodeFlag) >>_DefaultHsBase.bodyCodeBit) ^ shape.strand)
-                            {
-                                
-                                appendValue(set, (((_DefaultHs.getHsBodyS(index.ysa[pos]) - length(read) + 1 + k) << 20) +  (length(read) - 1 - k)) | _DefaultHitBase.flag2);
-                                
-                            }
-                            //[comt]::condition of normal strand
-                            else
-                            {     
-
-                                appendValue(set, ((_DefaultHs.getHsBodyS(index.ysa[pos]) - k) << 20) | k);
-                            }
-                            pre = index.ysa[pos];
+                            
+                            uint64_t cordy = length(read) - 1 - k;
+                            appendValue(set, (((_DefaultHs.getHsBodyS(index.ysa[pos]) - cordy) << 20) 
+                                + cordy) | _DefaultHitBase.flag2);
                         }
-                        if (++pos > length(index.ysa) - 1)
-                        {
-                            break;
+                        else
+                        {    
+                            uint64_t cordy = k;
+                            appendValue(set, ((_DefaultHs.getHsBodyS(index.ysa[pos]) - cordy) << 20) | cordy);
                         }
+                        pre = index.ysa[pos];
+                    }
+                    if (++pos > length(index.ysa) - 1)
+                    {
+                        break;
                     }
                 }
             }
-            dt = 0;
         }
     }
     return 0;
@@ -1072,6 +1007,16 @@ template <typename TDna, typename TSpec>
                 c_b += anchors.deltaPos2(k, k - 1); 
         }
     }
+    //<<debug
+        for (int ii = 0; ii < anchors.length(); ii++)
+        {
+            uint64_t mask1 = (1ULL << 20) - 1;
+            uint64_t mask2 = (1ULL << 40) - 1;
+            uint64_t tmp_cord = _DefaultCord.hit2Cord(anchors[ii]);
+
+            std::cout << "gaml1 " << ii << " " << get_cord_y(tmp_cord) << " " << get_cord_x(anchors[ii]) << " " << get_cord_x(tmp_cord) << "\n";
+        }
+    //>>debug
     if (list[0])
     {
         std::sort (list, list + lcount, std::greater<uint64_t>());
@@ -1090,6 +1035,7 @@ template <typename TDna, typename TSpec>
           else
               break;
         }
+        std::cout << "gaml2 " << anchors.length() << " " << length(hit) << "\n";
         return (list[0] >> 40);   
     }
     else
@@ -1367,7 +1313,10 @@ template <typename TDna, typename TSpec>
     return true;
 }
 
- bool isOverlap (uint64_t cord1, uint64_t cord2, int revscomp_const)
+bool isOverlap (uint64_t cord1, uint64_t cord2, 
+                int revscomp_const, 
+                int overlap_size
+                )
 {
     uint64_t strand1 = _DefaultCord.getCordStrand(cord1);
     uint64_t strand2 = _DefaultCord.getCordStrand(cord2);
@@ -1378,30 +1327,32 @@ template <typename TDna, typename TSpec>
     //int64_t y2 = revscomp_const * strand2 - _nStrand(strand2) * get_cord_y(cord2);
     int64_t y2 = _DefaultCord.getCordY (cord2);
     (void) revscomp_const;
-    return std::abs(x1 - x2) < window_size && std::abs(y1 - y2) < window_size && (!(strand1 ^ strand2));
+    return std::abs(x1 - x2) < overlap_size && 
+           std::abs(y1 - y2) < overlap_size && (!(strand1 ^ strand2));
 }
 /**
  * cord1 is predecessor of cord2 and they are not overlapped
  */
- bool isPreGap (uint64_t cord1, uint64_t cord2, int revscomp_const)
+ bool isPreGap (uint64_t cord1, uint64_t cord2, 
+                int revscomp_const, 
+                int gap_size
+                )
 {
-    //uint64_t strand1 = _DefaultCord.getCordStrand(cord1);
-    //uint64_t strand2 = _DefaultCord.getCordStrand(cord2);
+
     int64_t x1 = _DefaultCord.getCordX(cord1);
-    //int64_t y1 = get_cord_y(cord1);
     int64_t x2 = _DefaultCord.getCordX(cord2);
-    //int64_t y2 = get_cord_y(cord2);
-    //return (x1 + window_size > x2 || y1 + window_size > y2) && (std::abs(x1 - x2) > window_size || std::abs(y1 - y2) > window_size);
     (void) revscomp_const;
-    //std::cout << "[]::isPreGap " << x1 + window_size << " " << x2 << "\n";
-    return (x1 + window_size < x2);
+    return (x1 + gap_size <= x2);
 }
 /**
  * cord1 is successor of cord2 and they are not overlapped
  */
- bool isSucGap (uint64_t cord1, uint64_t cord2, int revscomp_const)
+ bool isSucGap (uint64_t cord1, uint64_t cord2, 
+                int revscomp_const,
+                int gap_size
+                )
 {
-    return isPreGap (cord2, cord1, revscomp_const);
+    return isPreGap (cord2, cord1, revscomp_const, gap_size);
 }
 /**
  * Extend windows between cord1, and cord2 if they are not overlapped,
@@ -1413,17 +1364,19 @@ template <typename TDna, typename TSpec>
  * 
  */         
  int extendPatch(StringSet<String<short> > & f1, 
-                       StringSet<String<short> > & f2, 
-                      String<uint64_t> & cords,
-                      int k,
-                      uint64_t cord1,
-                      uint64_t cord2,
-                      int revscomp_const
-                        )
+                 StringSet<String<short> > & f2, 
+                 String<uint64_t> & cords,
+                 int kk,
+                 uint64_t cord1,
+                 uint64_t cord2,
+                 int revscomp_const,
+                 int overlap_size,
+                 int gap_size
+                )
 {
     unsigned window_threshold = 30;
-    //std::cout << "[]::extendPatch::coord cord1y " << get_cord_y(cord1) << " cord2y " << get_cord_y(cord2) << " " << _DefaultCord.getCordStrand(cord1 ^ cord2) << "\n";
-    if (isOverlap(cord1, cord2, revscomp_const))
+    std::cout << "eP dg1_1 " << get_cord_y(cord1) << " " << get_cord_y(cord2) << "\n";
+    if (isOverlap(cord1, cord2, revscomp_const, overlap_size))
     {
         return 0;
     }
@@ -1443,15 +1396,14 @@ template <typename TDna, typename TSpec>
     int len = 0;
     uint64_t cord = pcord;
     String<uint64_t> tmp;
-    //std::cout << "[]::extendPatch pcord " << get_cord_y(cord) << " " << get_cord_y(scord) << "\n";
-    while (isPreGap(cord, scord, revscomp_const))
+    std::cout << "dg1_ " << get_cord_y(cord) << " " << get_cord_y(scord) << "\n";
+    while (isPreGap(cord, scord, revscomp_const, gap_size))
     {
-        //std::cout << "[]::extendWindow::n cord " << get_cord_y(cord) << "\n";
         cord = nextWindow (f1[strand1], f2[genomeId1], cord, window_threshold);
+        std::cout << "dg1_ " << get_cord_y(cord) << "\n";
         if (cord)
         {
             appendValue (tmp, cord);
-            //std::cout << "[]::extendWidnow::n append " << get_cord_y(back(tmp)) << " " << _DefaultCord.getCordX(back(tmp)) << " " << strand1 << " " << strand2 << "\n";
         }
         else
         {
@@ -1463,20 +1415,18 @@ template <typename TDna, typename TSpec>
     {
         len += length(tmp);
         nw = back(tmp);
-        insert(cords, k, tmp);
+        insert(cords, kk, tmp);
         clear(tmp);
     }
     
     cord = scord;
-    while (isSucGap(cord, nw, revscomp_const))
+    while (isSucGap(cord, nw, revscomp_const, gap_size))
     {
-        //std::cout << "[]::extendWindow::p cord " << get_cord_y(cord) << "\n";
         cord = previousWindow(f1[strand2], f2[genomeId2], cord, window_threshold);
         if (cord)
         {
             //TODO do another round previousWindow if cord = 0.
             appendValue (tmp, cord);
-            //std::cout << "[]::extendWidnow::p append " << get_cord_y(cord) << " " << _DefaultCord.getCordX(cord) << " " << _DefaultCord.getCordY (nw) << " " << _DefaultCord.getCordX(nw) << "\n";
         }
         else
         {
@@ -1489,7 +1439,7 @@ template <typename TDna, typename TSpec>
         {
             std::swap (tmp[i], tmp[length(tmp) - i - 1]);
         }
-        insert(cords, k + len, tmp);
+        insert(cords, kk + len, tmp);
         len += length(tmp);
     }
     return len;

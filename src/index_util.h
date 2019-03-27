@@ -143,6 +143,7 @@ public:
 
     HIndex();
     HIndex(StringSet<String<Dna5> > const & text);
+    bool isEmptyDir(uint64_t);
     void clear();
 }; 
 
