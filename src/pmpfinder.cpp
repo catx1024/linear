@@ -1007,16 +1007,6 @@ template <typename TDna, typename TSpec>
                 c_b += anchors.deltaPos2(k, k - 1); 
         }
     }
-    //<<debug
-        for (int ii = 0; ii < anchors.length(); ii++)
-        {
-            uint64_t mask1 = (1ULL << 20) - 1;
-            uint64_t mask2 = (1ULL << 40) - 1;
-            uint64_t tmp_cord = _DefaultCord.hit2Cord(anchors[ii]);
-
-            std::cout << "gaml1 " << ii << " " << get_cord_y(tmp_cord) << " " << get_cord_x(anchors[ii]) << " " << get_cord_x(tmp_cord) << "\n";
-        }
-    //>>debug
     if (list[0])
     {
         std::sort (list, list + lcount, std::greater<uint64_t>());
@@ -1035,7 +1025,6 @@ template <typename TDna, typename TSpec>
           else
               break;
         }
-        std::cout << "gaml2 " << anchors.length() << " " << length(hit) << "\n";
         return (list[0] >> 40);   
     }
     else
@@ -1375,7 +1364,6 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
                 )
 {
     unsigned window_threshold = 30;
-    std::cout << "eP dg1_1 " << get_cord_y(cord1) << " " << get_cord_y(cord2) << "\n";
     if (isOverlap(cord1, cord2, revscomp_const, overlap_size))
     {
         return 0;
@@ -1396,11 +1384,9 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     int len = 0;
     uint64_t cord = pcord;
     String<uint64_t> tmp;
-    std::cout << "dg1_ " << get_cord_y(cord) << " " << get_cord_y(scord) << "\n";
     while (isPreGap(cord, scord, revscomp_const, gap_size))
     {
         cord = nextWindow (f1[strand1], f2[genomeId1], cord, window_threshold);
-        std::cout << "dg1_ " << get_cord_y(cord) << "\n";
         if (cord)
         {
             appendValue (tmp, cord);
