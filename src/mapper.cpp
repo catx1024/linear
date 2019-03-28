@@ -37,6 +37,7 @@
 #include <fstream>
 #include <ctime>
 #include "mapper.h"
+#include "cords.h"
 #include "pmpfinder.h"
 #include "chain_map.h"
 #include "gap.h"
@@ -430,7 +431,7 @@ int64_t len = 0;
             clear(crhit);
             mnMapReadList(index, reads[j], anchors, mapParm, crhit);
             path_dst(begin(crhit), end(crhit), f1, f2, cordsTmp[c], cordLenThr);
-            if (_DefaultCord.getMaxLen(cordsTmp[c]) < length(reads[j]) * senThr)
+            if (getCordsMaxLen(cordsTmp[c]) < length(reads[j]) * senThr)
             {
                 clear(cordsTmp[c]);
                 anchors.init(1);

@@ -2,7 +2,7 @@
 #include <utility> 
 #include <seqan/stream.h>
 #include "index_util.h"
-#include "pmpfinder.h"
+#include "cords.h"
 #include "gap.h"
  uint64_t _nStrand1(uint64_t strand)
 {

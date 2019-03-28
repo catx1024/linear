@@ -3,6 +3,7 @@
 #include <seqan/align.h>
 #include "f_io.h"
 using namespace seqan;
+extern const int window_width;
 class GapRecords
 {
     typedef Row<Align<String<Dna5>, ArrayGaps> >::Type TRow;
@@ -44,8 +45,8 @@ int align_cords (StringSet<String<Dna5> >& genomes,
                  String<uint64_t> & cords,
                  String<BamAlignmentRecordLink> & bam_records,
                  int p,
-                 int block_size = window_size,
-                 int band = window_size / 2
+                 int block_size = window_width,
+                 int band = window_width / 2
                 );
 
 #endif
