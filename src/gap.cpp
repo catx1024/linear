@@ -1,11 +1,17 @@
 //GNode: N/A[1]|xval[32]|strand[1]|coordinate[30]
 #include <utility> 
-#include "base.h"
+#include <seqan/stream.h>
 #include "index_util.h"
 #include "pmpfinder.h"
 #include "gap.h"
-
-
+ uint64_t _nStrand1(uint64_t strand)
+{
+    return (strand << 1) - 1;
+}
+ uint64_t _flipCoord1 (uint64_t coord, uint64_t len, uint64_t strand)
+{
+    return len * strand - _nStrand1(strand) * coord;
+}
 struct GNodeBase
 {
     const unsigned xBitLen;
@@ -327,7 +333,7 @@ struct ACoord
                        uint64_t const & sbit = _defaultACoordBase.sBit,
                        uint64_t const & bit = _defaultACoordBase.cBitLen) 
     {
-        return (strand << sbit) + ((cf + _nStrand(strand) * cr) << bit) + cr;
+        return (strand << sbit) + ((cf + _nStrand1(strand) * cr) << bit) + cr;
     }
      uint64_t reverseAnchor(uint64_t & anchor, uint64_t const & mask = _defaultACoordBase.amask)
     {
@@ -352,7 +358,7 @@ struct ACoord
                    uint64_t const & mask3 = _defaultACoordBase.cmask
                   )
     {
-        return ((val >> bit) & mask) + _nStrand((val >> bit2) & 1) * (val & mask3);
+        return ((val >> bit) & mask) + _nStrand1((val >> bit2) & 1) * (val & mask3);
     }
      uint64_t getY (uint64_t val)
     {
@@ -496,7 +502,7 @@ void g_print_tiles_(String<uint64_t> & tiles, CharString str = "")
                          uint64_t const & bit2 = _defaultACoordBase.sBit,
                          uint64_t const & mask = _defaultACoordBase.cmask)
 {
-    return val - ((_nStrand((val >> bit2) & 1) * (val & mask)) << bit);
+    return val - ((_nStrand1((val >> bit2) & 1) * (val & mask)) << bit);
 }
 
 int mapGap_(GIndex & g_index, String <Dna5> & read,  uint64_t start2, uint64_t end2, 
@@ -527,7 +533,7 @@ int mapGap_(GIndex & g_index, String <Dna5> & read,  uint64_t start2, uint64_t e
                     while (_defaultGNode.getXValue(g_index.g_hs[hsStart]) == g_index.shape.XValue)
                     {
                         uint64_t strand = _defaultGNode.getStrand(g_index.g_hs[hsStart]) ^ g_index.shape.strand;
-                        //appendValue(anchor, ((_defaultGNode.getCoord(g_index.g_hs[hsStart]) + _nStrand(strand) * k) << 20) | k | (strand << 63));
+                        //appendValue(anchor, ((_defaultGNode.getCoord(g_index.g_hs[hsStart]) + _nStrand1(strand) * k) << 20) | k | (strand << 63));
                         appendValue(anchor, _defaultACoord.makeValue(_defaultGNode.getCoord(g_index.g_hs[hsStart]), k, strand));
                         ++hsStart;
                         // if strand == 1,  different strands
@@ -745,7 +751,7 @@ static const uint64_t g_hs_mask3 = (1ULL << 32) - 1;
                             uint64_t revscomp_const)
 {
     uint64_t strand = ((hs1 ^ hs2) >> 30 ) & 1;
-    uint64_t x = revscomp_const * strand - _nStrand(strand) * (hs2 & g_hs_mask2); 
+    uint64_t x = revscomp_const * strand - _nStrand1(strand) * (hs2 & g_hs_mask2); 
     val = (((hs1 - x) & (g_hs_mask2)) << 20) + x + (strand << g_hs_anchor_bit2);
 }
 ///get xvalue and type
@@ -767,7 +773,7 @@ static const uint64_t g_hs_mask3 = (1ULL << 32) - 1;
      * The cord of read (y) is shown in the same direction of the main strand
      * more readable 
      */
-    //uint64_t y = (main_strand ^ strand) * revscomp_const - _nStrand(main_strand ^ strand) * g_hs_anchor_getY (anchor);
+    //uint64_t y = (main_strand ^ strand) * revscomp_const - _nStrand1(main_strand ^ strand) * g_hs_anchor_getY (anchor);
     /**
      * The cord of read read (y) is shown in its own direction.
      * easy for following processing (align)
@@ -1241,8 +1247,8 @@ int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
                     uint64_t strand1 = _defaultTile.getStrand(s1) ^ main_strand; // main_strand as the 0 strand
                     uint64_t strand2 = _defaultTile.getStrand(s2) ^ main_strand;
                     // _flip y to the main_strand if strand1 == 1, otherwise do nothing
-                    uint64_t y1 = _flipCoord(_defaultTile.getY(s1), revscomp_const, strand1); 
-                    uint64_t y2 = _flipCoord(_defaultTile.getY(s2), revscomp_const, strand2);
+                    uint64_t y1 = _flipCoord1(_defaultTile.getY(s1), revscomp_const, strand1); 
+                    uint64_t y2 = _flipCoord1(_defaultTile.getY(s2), revscomp_const, strand2);
                    
                    return  y1 + (_defaultTile.getX(s1) << 3) + (strand1 << 9) < 
                            y2 + (_defaultTile.getX(s2) << 3) + (strand2 << 9);  
@@ -1289,8 +1295,8 @@ int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
     
     ///extend the last and first tiles
     ///flip the coordinates from the direction of the reference genome to the direction of the data structure 'Cord'.
-    uint64_t gr_start_flip = _flipCoord(gr_start, revscomp_const, main_strand);
-    uint64_t gr_end_flip = _flipCoord(gr_end, revscomp_const, main_strand);
+    uint64_t gr_start_flip = _flipCoord1(gr_start, revscomp_const, main_strand);
+    uint64_t gr_end_flip = _flipCoord1(gr_end, revscomp_const, main_strand);
     if (main_strand)
     {
         std::swap (gr_start_flip, gr_end_flip);
@@ -2415,8 +2421,8 @@ if (t == 3)
 {
     // Insert the virtual head tile and tail tile, so all original tiles can be processed in one for loop
     // The inserted head tile and tail tile will be removed at the end of the function, so it will affect the original tiles.
-    uint64_t r_start_flip = _flipCoord (r_start, length(read) - 1, main_strand);
-    uint64_t r_end_flip = _flipCoord (r_end, length(read) - 1, main_strand);
+    uint64_t r_start_flip = _flipCoord1 (r_start, length(read) - 1, main_strand);
+    uint64_t r_end_flip = _flipCoord1 (r_end, length(read) - 1, main_strand);
     int block_size = window_size;
     if (main_strand)
     {
@@ -2619,9 +2625,9 @@ if (t == 3)
     uint64_t gs_start = get_cord_x(cord1);
     uint64_t gs_end = get_cord_x(cord2);
     uint64_t gr_start = (length(read) - 1) * strand - 
-            (_nStrand(strand) * (get_cord_y(cord1)));
+            (_nStrand1(strand) * (get_cord_y(cord1)));
     uint64_t gr_end = (length(read) - 1) * strand - 
-            (_nStrand(strand) * (get_cord_y(cord2)));
+            (_nStrand1(strand) * (get_cord_y(cord2)));
     if (strand)
     {
         std::swap(gr_start, gr_end);
