@@ -2,7 +2,7 @@
 #include <utility> 
 #include <seqan/stream.h>
 #include "index_util.h"
-#include "cords.h"
+#include "cord.h"
 #include "pmpfinder.h"
 #include "gap.h"
 

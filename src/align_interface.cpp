@@ -1,5 +1,5 @@
 #include <utility> 
-#include "cords.h"
+#include "cord.h"
 #include "align_interface.h"
 //TODO seqand::setclippedpositoin retrieve source postion that's not efficient
 using namespace seqan;

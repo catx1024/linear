@@ -37,7 +37,7 @@
 #include <fstream>
 #include <ctime>
 #include "mapper.h"
-#include "cords.h"
+#include "cord.h"
 #include "pmpfinder.h"
 #include "chain_map.h"
 #include "gap.h"

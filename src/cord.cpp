@@ -1,5 +1,5 @@
 #include <seqan/sequence.h>
-#include "cords.h"
+#include "cord.h"
 using namespace seqan;
 
 CordBase::CordBase():

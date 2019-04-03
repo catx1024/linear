@@ -2,7 +2,7 @@
 #include <seqan/sequence.h>
 #include <seqan/stream.h>
 #include "base.h"
-#include "cords.h"
+#include "cord.h"
 #include "pmpfinder.h"
 #include "chain_map.h"
 
