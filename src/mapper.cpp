@@ -234,8 +234,8 @@ void Mapper::printCordsRaw2()
                     {
                         if (_DefaultHit.isBlockEnd(cordSet[k][i]) || i == length(cordSet[k]) - 1)
                         {
-                            readCordEnd = _DefaultCord.getCordY(cordSet[k][i]) + window_size;
-                            seqsCordEnd = _getSA_i2(_DefaultCord.getCordX(cordSet[k][i])) + window_size;
+                            readCordEnd = _DefaultCord.getCordY(cordSet[k][i]) + window_width;
+                            seqsCordEnd = _getSA_i2(_DefaultCord.getCordX(cordSet[k][i])) + window_width;
                             break;
                         }
                     }
@@ -371,8 +371,8 @@ int rawMap_dst2_MF(LIndex & index,
   
     typedef String<Dna5> Seq;
     //double time=sysTime();
-    float senThr = mapParm.senThr / window_size;
-    float cordThr = mapParm.cordThr / window_size;
+    float senThr = mapParm.senThr / window_width;
+    float cordThr = mapParm.cordThr / window_width;
     MapParm complexParm = mapParm;
     complexParm.alpha = complexParm.alpha2;
     complexParm.listN = complexParm.listN2;

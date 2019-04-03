@@ -11,8 +11,8 @@ const float band_width = 0.25;
 const unsigned cmask = ((uint64_t)1<<20) - 1;
 const unsigned cell_size = 16;
 const unsigned cell_num = 12;
-const unsigned window_size = cell_size * cell_num; //16*12
-const unsigned window_delta = window_size * (1 - 2 * band_width);
+const unsigned window_width = cell_size * cell_num; //16*12
+const unsigned window_delta = window_width * (1 - 2 * band_width);
 const unsigned sup = cell_num;
 const unsigned med =ceil((1 - band_width) * cell_num);
 const unsigned inf = ceil((1 - 2 * band_width) * cell_num);
@@ -35,11 +35,12 @@ const unsigned windowThreshold = 36; // 36;
 
 //======HIndex getIndexMatch()
 
-void setCordsMaxLen(String<uint64_t> & cords, uint64_t const & len)
+void setCordsMaxLen(String<uint64_t> & cords, uint64_t len)
 {
     if (!empty(cords)) 
     {
-        set_cord_y (cords[0], std::max(len, get_cord_y(cords[0])));
+        set_cord_y (cords[0], std::max(get_cord_y(cords[0]), len));
+
     }
 }
 
@@ -479,7 +480,7 @@ void createFeatures(TIter5 const & itBegin, TIter5 const & itEnd, String<short> 
         return false;
     createFeatures(begin(read), end(read), f1);
     unsigned genomeId = get_cord_id(cords[0]);
-    while (get_cord_y(back(cords)) < length(read) - window_size)
+    while (get_cord_y(back(cords)) < length(read) - window_width)
     {
         extendWindow(f1, f2[genomeId], cords, _DefaultCord.getCordStrand(back(cords)));
         if(!nextCord(hit, currentIt, cords))
@@ -508,7 +509,7 @@ void checkPath(StringSet<String<Dna5> > & cords, StringSet<String<Dna5> > const 
         if(empty(*it))
             count++;
         else
-            if (get_cord_y(back(*it)) + window_size * 2 < length(read))
+            if (get_cord_y(back(*it)) + window_width * 2 < length(read))
             {
                 count++;
             }
@@ -1049,7 +1050,7 @@ bool endCord( String<uint64_t> & cords,
         }
         else
         {
-            _DefaultCord.setCordsMaxLen(cord, length(cord) - preCordStart);
+            setCordsMaxLen(cord, length(cord) - preCordStart);
     //printf("[debug]::nextcord new block %f %d %f\n", (float)score/(length(cord) - preCordStart), length(cord) - preCordStart, cordThr);
         }
         preCordStart = length(cord);
@@ -1130,7 +1131,7 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
  * Extend windows between cord1, and cord2 if they are not overlapped,
  * and insert the windows to the k th element of the cords. 
  * if cord1 and cord2 have the same strand 
- * then call previousWindow for cord1 and nextWindow for cord2 until x1 + window_size < x2
+ * then call previousWindow for cord1 and nextWindow for cord2 until x1 + window_width < x2
  * if cord1 and cord2 have different strand 
  * then call nextWindow for cord1 and previousWindow for cord2 along each own strand until it can't be extended any more.
  * 
@@ -1250,7 +1251,7 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     String<int> f1;
     typename Iterator<String<uint64_t> >::Type it = hitBegin;
     unsigned preBlockPtr;
-    float cordLenThr = length(read) * cordThr / window_size;
+    float cordLenThr = length(read) * cordThr / window_width;
     float score = 0;
     createFeatures(begin(read), end(read), f1);
     if(initCord(it, hitEnd, preBlockPtr, cords))
@@ -1280,7 +1281,7 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     String<int> f1;
     typename Iterator<String<uint64_t> >::Type it = hitBegin;
     unsigned preBlockPtr;
-    float cordLenThr = length(read) * cordThr / window_size;
+    float cordLenThr = length(read) * cordThr / window_width;
     float score = 0;
     createFeatures(begin(read), end(read), f1);
     if(initCord(it, hitEnd, preBlockPtr, cords))
@@ -1337,8 +1338,8 @@ int rawMap_dst( LIndex   & index,
   
     typedef String<Dna5> Seq;
     double time=sysTime();
-    float senThr = mapParm.senThr / window_size;
-    float cordThr = mapParm.cordThr / window_size;
+    float senThr = mapParm.senThr / window_width;
+    float cordThr = mapParm.cordThr / window_width;
     MapParm complexParm = mapParm;
     complexParm.alpha = complexParm.alpha2;
     complexParm.listN = complexParm.listN2;

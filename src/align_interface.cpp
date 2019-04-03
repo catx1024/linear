@@ -9,7 +9,7 @@ using namespace seqan;
  * @c1 := current_view_coordinate + clippedBeginPosition(row1)
  */
 //TODO:: change score type
-const int window_width = 192; //window size in pmpfinder.h
+const int window_width_ = 192; //window size in pmpfinder.h
 const int s1 = 3; //match
 const int s2 = 0; //mismatch
 const int s3 = -1; //gap
@@ -559,8 +559,8 @@ int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                 String<Dna5> & read, 
                 String<Dna5> & comrevRead,
                 uint64_t & cord,
-                int block_size = window_width ,
-                int band = window_width  / 2,
+                int block_size = window_width_ ,
+                int band = window_width_  / 2,
                 int local_flag = 1
                )
 {
@@ -964,7 +964,7 @@ int merge_align_(Row<Align<String<Dna5>,ArrayGaps> >::Type & row11,
     }
 }
 /**
- *  The size of the block to be clipped are supposed to > window_width ,
+ *  The size of the block to be clipped are supposed to > window_width_ ,
  *  since the function clips the middle part of the block excluding 
  *  the head and tail part. Too small block cann't be well clipped. 
  */
@@ -1617,7 +1617,7 @@ int align_cords (StringSet<String<Dna5> >& genomes,
     int flag2 = 1;
     int d_overlap_x;
     int d_overlap_y;
-    int thd_max_dshift = block_size * 3; //For head and tail cords of a new segs, their size will be increased based on the window_width , so that there can be enough overlap region to be clippped.
+    int thd_max_dshift = block_size * 3; //For head and tail cords of a new segs, their size will be increased based on the window_width_ , so that there can be enough overlap region to be clippped.
     int thd_min_window = 50;
     int thd_min_score = 40;
     float thd_ddx = (float)band / block_size / 8; //TODO::8 needs tunning
@@ -1911,7 +1911,7 @@ int clip_window_(Align<String<Dna5>,ArrayGaps> & aligner,
                               band
                             );
     int g_range = (int) genomeEnd - genomeStart;
-    if (score < thd_align_score / (int) window_width  * g_range && score_flag)
+    if (score < thd_align_score / (int) window_width_  * g_range && score_flag)
     {
         return -1;
     }

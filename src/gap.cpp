@@ -3,12 +3,14 @@
 #include <seqan/stream.h>
 #include "index_util.h"
 #include "cords.h"
+#include "pmpfinder.h"
 #include "gap.h"
- uint64_t _nStrand1(uint64_t strand)
+
+uint64_t _nStrand1(uint64_t strand)
 {
     return (strand << 1) - 1;
 }
- uint64_t _flipCoord1 (uint64_t coord, uint64_t len, uint64_t strand)
+uint64_t _flipCoord1 (uint64_t coord, uint64_t len, uint64_t strand)
 {
     return len * strand - _nStrand1(strand) * coord;
 }
@@ -813,7 +815,7 @@ int _fscore (String<Dna5> & seq, String<Dna5> read, uint64_t gstart, uint64_t rs
         for (int d2 = 16; d2 < 5000; d2 += 10)
         {
             fsc = 0;
-            for (int i = 0; i < window_size / script_len ; i++)
+            for (int i = 0; i < window_width / script_len ; i++)
             {
                 for (int j = 0; j < script_len; j++)
                 {
@@ -841,7 +843,7 @@ int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
 {
     for (uint64_t k = 1; k < length(tiles); k++)
     {
-        if (_defaultTile.getX(tiles[k] - tiles[k - 1]) > window_size)
+        if (_defaultTile.getX(tiles[k] - tiles[k - 1]) > window_width)
         {
             return 1;
         }
@@ -849,14 +851,14 @@ int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
     
     if (length(tiles) > 0)
     {
-        if (_defaultTile.getX(tiles[0]) -  g_start > window_size )//|| g_end - _defaultTile.getX(tiles[length(tiles) - 1]) > window_size)
+        if (_defaultTile.getX(tiles[0]) -  g_start > window_width )//|| g_end - _defaultTile.getX(tiles[length(tiles) - 1]) > window_width)
         {
             return 1;
         }   
     }
     else 
     {
-        if (g_end - g_start > window_size)
+        if (g_end - g_start > window_width)
         {
             return 1;
         }
@@ -1160,8 +1162,8 @@ int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
                     });
                 prex = prey = -1;
                 int kcount = 0;
-                uint64_t first_low_bound_x = g_hs_anchor_getX(anchor[prek]) + window_size;
-                uint64_t first_low_bound_y = g_hs_anchor_getY(anchor[prek]) + window_size;
+                uint64_t first_low_bound_x = g_hs_anchor_getX(anchor[prek]) + window_width;
+                uint64_t first_low_bound_y = g_hs_anchor_getY(anchor[prek]) + window_width;
                 for (int i = prek + 1; g_hs_anchor_getX(anchor[i]) < first_low_bound_x && g_hs_anchor_getY(anchor[i]) < first_low_bound_y; i++)
                 {
                     kcount++;
@@ -1284,7 +1286,7 @@ int check_tiles_(String<uint64_t> & tiles, uint64_t g_start, uint64_t g_end)
     resize (tiles, prep2);
     
     /**
-     * extend window if there are gaps between tiles until the horizontal coordinates x1 - x2 < window_size or the gap can't be extend any more
+     * extend window if there are gaps between tiles until the horizontal coordinates x1 - x2 < window_width or the gap can't be extend any more
      * ATTENTION: relation between y1 and y2 currently are not considered.
      */
     ///extend the middle tiles
@@ -1475,7 +1477,7 @@ unsigned _get_tile_f_ (uint64_t const & tile,
     }
 /**
  * step 3. extend patch
- * extend window if there are gaps between tiles until the horizontal coordinates x1 - x2 < window_size or the gap can't be extend any more
+ * extend window if there are gaps between tiles until the horizontal coordinates x1 - x2 < window_width or the gap can't be extend any more
  * ATTENTION: relation between y1 and y2 currently are not considered.
  */
     int thd_overlap_size = 170;
@@ -2423,7 +2425,7 @@ if (t == 3)
     // The inserted head tile and tail tile will be removed at the end of the function, so it will affect the original tiles.
     uint64_t r_start_flip = _flipCoord1 (r_start, length(read) - 1, main_strand);
     uint64_t r_end_flip = _flipCoord1 (r_end, length(read) - 1, main_strand);
-    int block_size = window_size;
+    int block_size = window_width;
     if (main_strand)
     {
         std::swap (r_start_flip, r_end_flip);
@@ -2698,7 +2700,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
     uint64_t genomeId;
     uint64_t gap_len = 0;
     int64_t extend_len = 10000;
-    int block_size = window_size;
+    int block_size = window_width;
     int last_flag = 1;
     int thd_cord_remap = 400;
     int thd_cord_gap = thd_gap + block_size;
@@ -2762,7 +2764,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
             int64_t shift_x = extend_len;
             int64_t shift_y = length(read) - get_cord_y(cord1) - 1;
             uint64_t infi_cord = _DefaultCord.shift(cord1, shift_x, shift_y);
-            if (get_cord_y(cord1) + window_size + thd_cord_gap < length(read))
+            if (get_cord_y(cord1) + window_width + thd_cord_gap < length(read))
             {
                 mapGap_ (seqs, read, comstr, cord1, 
                          infi_cord, g_hs, g_anchor, f1, f2,  
@@ -2779,7 +2781,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                     _DefaultHit.setBlockEnd(cords[i]);
                     clear(tiles);
                 }   
-                gap_len += length(read) - get_cord_y(cord1) - window_size;
+                gap_len += length(read) - get_cord_y(cord1) - window_width;
             }
             last_flag = 1;
         }

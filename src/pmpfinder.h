@@ -8,7 +8,7 @@ extern const float band_width;
 extern const unsigned cmask;
 extern const unsigned cell_size;
 extern const unsigned cell_num;
-extern const unsigned window_size; //16*12
+extern const unsigned window_width; //16*12
 extern const unsigned window_delta;
 extern const unsigned sup;
 extern const unsigned med;
@@ -39,7 +39,7 @@ uint64_t create_cord (uint64_t, uint64_t, uint64_t, uint64_t);
 uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y);
 void set_cord_end (uint64_t &); 
 
-void setCordsMaxLen(String<uint64_t> &, uint64_t const &);
+void setCordsMaxLen(String<uint64_t> &, uint64_t);
 uint64_t getCordsMaxLen(String<uint64_t> const &);
 
 void createFeatures(TIter5 const &, TIter5 const &, String<short> & );
@@ -61,6 +61,6 @@ int extendPatch(StringSet<String<short> > & f1,
                 uint64_t cord1,
                 uint64_t cord2,
                 int revscomp_const,
-                int overlap_size = window_size,
-                int gap_size = window_size);
+                int overlap_size = window_width,
+                int gap_size = window_width);
 #endif

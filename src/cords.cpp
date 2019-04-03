@@ -1,4 +1,6 @@
+#include <seqan/sequence.h>
 #include "cords.h"
+using namespace seqan;
 
 CordBase::CordBase():
         bit(20),
@@ -26,14 +28,7 @@ HitBase::HitBase():
 {}
 HitBase _DefaultHitBase;
 Hit _DefaultHit;
-uint64_t _getSA_i1(uint64_t const & node)
-{
-    return (node >> _BaseNum_bits) & _BaseNum_SeqMask;
-}
-uint64_t _getSA_i2(uint64_t const & node)
-{
-    return node & _BaseNum_code;
-}
+
 uint64_t Cord::getCordX(uint64_t const & cord, 
                unsigned const & bit,
                uint64_t const & mask) const
@@ -124,10 +119,28 @@ bool Cord::isBlockEnd(uint64_t & val, uint64_t const & flag)
     return val & flag;
 }
 
+
+const unsigned _sa1_bit_ = 60;
+const unsigned _sa2_bit_ = 40;
+const uint64_t _sa1_mask_ = (1ULL << _sa1_bit_ - _sa2_bit_) - 1;
+const uint64_t _sa2_mask_ = (1ULL << _sa2_bit_) - 1;
+uint64_t _getSA_i1(uint64_t const & node)
+{
+    return (node >> _sa2_bit_) & _sa1_mask_;
+}
+uint64_t _getSA_i2(uint64_t const & node)
+{
+    return node & _sa2_mask_;
+}
 uint64_t get_cord_x (uint64_t val) {return _getSA_i2(_DefaultCord.getCordX(val));}
 uint64_t get_cord_y (uint64_t val) {return _DefaultCord.getCordY(val);}
 uint64_t get_cord_strand (uint64_t val) {return _DefaultCord.getCordStrand(val);}
 uint64_t get_cord_id (uint64_t val) {return _getSA_i1(_DefaultCord.getCordX(val));}
+void set_cord_y (uint64_t & cord, uint64_t y)
+{
+    cord &= ~(_DefaultCordBase.mask);
+    cord += y;
+}
 void set_cord_end (uint64_t & val) {_DefaultCord.setCordEnd(val);}
 uint64_t create_id_x(uint64_t const id, uint64_t const x)
 {

@@ -97,6 +97,9 @@ struct Hit
     unsigned getStrand(uint64_t const &, uint64_t const & = _DefaultHitBase.flag2);
 };
 extern Hit _DefaultHit;
+extern const unsigned _sa1_bit_;
+extern const uint64_t _sa1_mask_;
+extern const uint64_t _sa2_mask_;
 
 void cmpRevCord(uint64_t, uint64_t, uint64_t &, uint64_t &, uint64_t);
 uint64_t _getSA_i1(uint64_t const &);
@@ -108,6 +111,7 @@ uint64_t get_cord_id (uint64_t);
 uint64_t create_id_x (uint64_t, uint64_t);
 uint64_t create_cord (uint64_t, uint64_t, uint64_t, uint64_t);
 uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y);
+void set_cord_y (uint64_t & cord, uint64_t y);
 void set_cord_end (uint64_t &); 
 
 #endif
