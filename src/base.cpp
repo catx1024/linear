@@ -262,7 +262,7 @@ PMRecord::PMRecord(Options & options)
     init(AnchorType(0), 0);
 }
 
- void Anchors::setAnchor(unsigned p, 
+void Anchors::setAnchor(unsigned p, 
     Anchors::AnchorType pos1,  Anchors::AnchorType pos2)
 {
     set[p] = (pos1 << AnchorBase::bit) + pos2;
