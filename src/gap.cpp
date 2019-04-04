@@ -15,12 +15,14 @@ struct CmpInt64
     CmpInt64 & operator << (int64_t);
     CmpInt64 & operator >> (int64_t);
 }g_cmpll;
+
 CmpInt64 & CmpInt64::init(int64_t & rslt, int64_t init_val) 
 { 
     p_rslt = & rslt;
     *p_rslt = init_val;
     return *this;
 }
+
 CmpInt64 & CmpInt64::min(int64_t & rslt, int64_t val) 
 {
     return init(rslt, val);

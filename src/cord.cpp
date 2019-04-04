@@ -136,6 +136,10 @@ uint64_t get_cord_x (uint64_t val) {return _getSA_i2(_DefaultCord.getCordX(val))
 uint64_t get_cord_y (uint64_t val) {return _DefaultCord.getCordY(val);}
 uint64_t get_cord_strand (uint64_t val) {return _DefaultCord.getCordStrand(val);}
 uint64_t get_cord_id (uint64_t val) {return _getSA_i1(_DefaultCord.getCordX(val));}
+uint64_t shift_cord(uint64_t const & val, int64_t x, int64_t y)
+{
+    return _DefaultCord.shift(val, x, y);
+}
 void set_cord_y (uint64_t & cord, uint64_t y)
 {
     cord &= ~(_DefaultCordBase.mask);
