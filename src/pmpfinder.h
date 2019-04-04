@@ -28,17 +28,6 @@ extern const uint64_t hmask;
 extern const unsigned windowThreshold; // 36;
 
 typedef Iterator <String <Dna5> >::Type TIter5;
-  
-void cmpRevCord(uint64_t, uint64_t, uint64_t &, uint64_t &, uint64_t);
-uint64_t get_cord_x (uint64_t);
-uint64_t get_cord_y (uint64_t); 
-uint64_t get_cord_strand (uint64_t);
-uint64_t get_cord_id (uint64_t);
-uint64_t shift_cord(uint64_t const &, int64_t, int64_t);
-uint64_t create_id_x (uint64_t, uint64_t);
-uint64_t create_cord (uint64_t, uint64_t, uint64_t, uint64_t);
-uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y);
-void set_cord_end (uint64_t &); 
 
 void setCordsMaxLen(String<uint64_t> &, uint64_t);
 uint64_t getCordsMaxLen(String<uint64_t> const &);
