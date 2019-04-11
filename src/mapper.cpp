@@ -1,52 +1,104 @@
-// ==========================================================================
-//                           Mapping SMRT reads 
-// ==========================================================================
-// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-//     * Redistributions of source code must retain the above copyright
-//       notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above copyright
-//       notice, this list of conditions and the following disclaimer in the
-//       documentation and/or other materials provided with the distribution.
-//     * Neither the name of Knut Reinert or the FU Berlin nor the names of
-//       its contributors may be used to endorse or promote products derived
-//       from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL KNUT REINERT OR THE FU BERLIN BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-// DAMAGE.
-//
-// ==========================================================================
-// Author: cxpan <chenxu.pan@fu-berlin.de>
-// ==========================================================================
-
-#include <seqan/arg_parse.h>
 #include <iostream>
 #include <fstream>
 #include <ctime>
-#include "mapper.h"
+#include <seqan/arg_parse.h>
 #include "cord.h"
-#include "pmpfinder.h"
 #include "chain_map.h"
+#include "pmpfinder.h"
 #include "gap.h"
 #include "align_interface.h"
-#include "args_parser.h"
+#include "mapper.h"
 
 using namespace seqan; 
 
+MapParm parm1 ( 
+        base_block_size_,     //blockSize,
+        //Const_::_DELTA,          //delta(Const_::_DELTA),
+        64,                          //delta
+        base_threshold_,     //threshold(Const_::_THRESHOLD),
+        base_kmer_step_,       //kmerStep(Const_::_KMERSTEP),
+        base_shape_len_,      //shapeLen(Const_::_SHAPELEN),
+        1,                      //senstivity(0),
+        0,                      //anchorDeltaThr(),
+        1000,                   //minReadLen(1000),
+        10,                      //listN
+        20,                      //listN2
+        15,                     //alpha(Const_::_ALPHA),
+        5,                      //alpha2 for complex mapping 
+        0.02,                    //anchorLenThr(0.02),    anchors with lenghth > this parameter is pushed into the queue
+        0.5,                     //rcThr(0.75)
+        0.7,                     //cordThr length of cord < cordThr are abandone
+        0.7,                     //senthr: perfrom next filter on cords of length < senthr 
+        0.1                      //clsthr: thread of cluster
+); 
 
+//normal
+MapParm parm0 ( 
+        base_block_size_,     //blockSize,
+        base_delta_,          //delta(Const_::_DELTA),
+        base_threshold_,     //threshold(Const_::_THRESHOLD),
+        base_kmer_step_,       //kmerStep(Const_::_KMERSTEP),
+        base_shape_len_,      //shapeLen(Const_::_SHAPELEN),
+        0,                      //senstivity(0),
+        0,                      //anchorDeltaThr(),
+        1000,                   //minReadLen(1000),
+        10,                      //listN
+        20,                      //listN2
+        15,                     //alpha(Const_::_ALPHA),
+        5,                      //alpha2 for complex mapping
+        0.02,                    //anchorLenThr(0.02),    anchors with lenghth > this parameter is pushed into the queue
+        0.5,                     //rcThr(0.8)
+        0.2,                     //cordThr length of cord < cordThr are abandoned
+        0.2,                     //senthr: length of cord < senthr are erased duing path
+        0.1                      //clsthr: thread of cluster
+
+); 
+
+//sensitive
+MapParm parm2 ( 
+        base_block_size_,     //blockSize,
+        //Const_::_DELTA,          //delta(Const_::_DELTA),
+        64,                      //delta
+        base_threshold_,     //threshold(Const_::_THRESHOLD),
+        base_kmer_step_,       //kmerStep(Const_::_KMERSTEP),
+        base_shape_len_,      //shapeLen(Const_::_SHAPELEN),
+        2,                      //senstivity(0),
+        0,                      //anchorDeltaThr(),
+        1000,                   //minReadLen(1000),
+        4,                      //listN
+        50,                      //listN2
+        0.65,                     //alpha(Const_::_ALPHA),
+        0.5,                      //alpha2 for complex mapping
+        0.02,                    //anchorLenThr(0.02),    anchors with lenghth > this parameter is pushed into the queue
+        0.8,                     //rcThr(0.75)
+        0.8,                      //cordThr length of cord < cordThr are abandoned
+        0.8,                     //senthr: length of cord < senthr are erased duing path
+        0.1                      //clsthr: thread of cluster
+
+        
+); 
+
+
+MapParm parmt ( 
+        base_block_size_,     //blockSize,
+        base_delta_,          //delta(Const_::_DELTA),
+        base_threshold_,     //threshold(Const_::_THRESHOLD),
+        base_kmer_step_,       //kmerStep(Const_::_KMERSTEP),
+        base_shape_len_,      //shapeLen(Const_::_SHAPELEN),
+        0,                      //senstivity(0),
+        0,                      //anchorDeltaThr(),
+        1000,                   //minReadLen(1000),
+        2,                         //listN
+        2,                      //listN2
+        0.75,                     //alpha(Const_::_ALPHA),
+        0.65,                      //alpha2 for complex mapping
+        0.02,                    //anchorLenThr(0.02),    anchors with lenghth > this parameter is pushed into the queue
+        0.8,                     //rcThr(0.8)
+        0.8,                       //cordThr length of cord < cordThr are abandoned
+        0.8,                     //senthr: length of cord < senthr are erased duing path
+        0.1                      //clsthr: thread of cluster
+        
+); 
 
 Mapper::Mapper(Options & options):
     record(options),
@@ -505,24 +557,4 @@ int map(Mapper & mapper, int p1)
     print_clip_gvf(mapper);
     return 0;
 }
-int main(int argc, char const ** argv)
-{
-    double time = sysTime();
-    std::cerr << "[]\n";
-    (void)argc;
-    Options options;
-    seqan::ArgumentParser::ParseResult res = parseCommandLine(options, argc, argv);
-    if (res != seqan::ArgumentParser::PARSE_OK)
-        return res == seqan::ArgumentParser::PARSE_ERROR;
-    std::cerr << "Encapsulated version: Mapping reads efficiently" << std::endl;
-    Mapper mapper(options);
-    omp_set_num_threads(mapper.thread());
-    map(mapper, options.p1);
 
-    //mapper.print_vcf();
-    std::cerr << "  Result Files: \033[1;31m" << options.oPath << "\033[0m" << std::endl;
-    std::cerr << "                \033[1;31m" << (mapper.getOutputPrefix() + ".gvf") << "\033[0m" << std::endl;
-    std::cerr << "                \033[1;31m" << (mapper.getOutputPrefix() + ".sam") << "\033[0m" << std::endl;
-    std::cerr << "Time in sum[s] " << sysTime() - time << std::endl;
-    return 0;
-}

@@ -22,11 +22,13 @@ int main(int argc, char ** argv)
     std::cerr << "Encapsulated version: Mapping reads efficiently" << std::endl;
     //(void)argc;
     // Parse the command line.
-    //Options options;
-    //seqan::ArgumentParser::ParseResult res = parseCommandLine(options, argc, argv);
-    //if (res != seqan::ArgumentParser::PARSE_OK)
-    //    return res == seqan::ArgumentParser::PARSE_ERROR;
+    Options options;
+    seqan::ArgumentParser::ParseResult res = parseCommandLine(options, argc, argv);
+    if (res != seqan::ArgumentParser::PARSE_OK)
+        return res == seqan::ArgumentParser::PARSE_ERROR;
+    Mapper mapper(options);
     //double t=sysTime();
+
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 

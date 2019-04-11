@@ -2,7 +2,7 @@
 #include "args_parser.h"
 
 seqan::ArgumentParser::ParseResult
-parseCommandLine(Options & options, int argc, char const ** argv)
+parseCommandLine(Options & options, int argc, char ** argv)
 {
     // Setup ArgumentParser.
     seqan::ArgumentParser parser("Linear");
