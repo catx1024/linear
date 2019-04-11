@@ -105,14 +105,7 @@ const unsigned blocklimit = 32;
 {
     node = (i1 << _BaseNum_bits) + i2;
 }
- uint64_t _getSA_i1(uint64_t const & node)
-{
-    return (node >> _BaseNum_bits) & _BaseNum_SeqMask;
-}
- uint64_t _getSA_i2(uint64_t const & node)
-{
-    return node & _BaseNum_code;
-}
+
 
 
 //========================================================

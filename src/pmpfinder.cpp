@@ -2,6 +2,7 @@
 #include <seqan/sequence.h>
 #include <seqan/stream.h>
 #include "base.h"
+#include "cord.h"
 #include "pmpfinder.h"
 #include "chain_map.h"
 
@@ -10,8 +11,8 @@ const float band_width = 0.25;
 const unsigned cmask = ((uint64_t)1<<20) - 1;
 const unsigned cell_size = 16;
 const unsigned cell_num = 12;
-const unsigned window_size = cell_size * cell_num; //16*12
-const unsigned window_delta = window_size * (1 - 2 * band_width);
+const unsigned window_width = cell_size * cell_num; //16*12
+const unsigned window_delta = window_width * (1 - 2 * band_width);
 const unsigned sup = cell_num;
 const unsigned med =ceil((1 - band_width) * cell_num);
 const unsigned inf = ceil((1 - 2 * band_width) * cell_num);
@@ -32,167 +33,21 @@ const int scriptMask3 = scriptMask2 << scriptWindow;
 const uint64_t hmask = (1ULL << 20) - 1;
 const unsigned windowThreshold = 36; // 36;
 
-CordBase::CordBase():
-        bit(20),
-        flagEnd(1ULL << 60),
-        mask(0xfffff),
-        maskx(0xffffffffff),
-        valueMask((1ULL<< 60) - 1),
-        flag_bit(61),
-        flag_strand(1ULL << flag_bit),
-        flag_end(0x1000000000000000),
-        cell_bit(4),
-        cell_size(16),
-        headFlag((1ULL<<63)),
-        valueMask_dstr(valueMask | flag_strand),
-        bit_id (40)
-{}
-CordBase _DefaultCordBase;   
-Cord _DefaultCord;
-HitBase::HitBase():
-        bit(60),
-        bit2(61),
-        flag(1ULL<<bit),
-        flag2(1ULL<<bit2),
-        mask(flag - 1)
-{}
-HitBase _DefaultHitBase;
-Hit _DefaultHit;
-
-uint64_t Cord::getCordX(uint64_t const & cord, 
-               unsigned const & bit,
-               uint64_t const & mask) const
-{
-    return (cord >> bit) & mask; 
-}
-
-uint64_t Cord::getCordY(uint64_t const & cord, 
-               uint64_t const & mask) const 
-{
-    return cord & mask;
-}
-
-uint64_t Cord::createCord(uint64_t const & x, 
-                 uint64_t const & y, 
-                 uint64_t const & strand,
-                 unsigned const & bit, 
-                 unsigned const & bit2) const
-{
-    return (x << bit) + y + (strand << bit2);
-}
-
-uint64_t Cord::hit2Cord(uint64_t const & hit, 
-               unsigned const & bit, 
-               uint64_t const & mask,
-               uint64_t const & mask2
-              ) const
-{
-    return (hit + ((hit & mask) << bit)) & mask2;
-}
-
-uint64_t Cord::hit2Cord_dstr(uint64_t const & hit, 
-               unsigned const & bit, 
-               uint64_t const & mask,
-               uint64_t const & mask2
-              ) const
-{
-    return (hit + ((hit & mask) << bit)) & mask2;
-}
-
-uint64_t Cord::cord2Cell(uint64_t const & cord, 
-                unsigned const & bit) const
-{
-    return cord >> bit;
-}
-
- uint64_t Cord::cell2Cord(uint64_t const & cell, 
-                unsigned const & bit) const
-{
-    return cell << bit;
-}
-
-void Cord::setCordEnd(uint64_t & cord,
-            typename CordBase::Flag const & end)
-{
-    cord |= end;
-}
-
-typename CordBase::Flag Cord::getCordStrand(uint64_t const & cord,
-            unsigned const & strand) const
-{
-    return (cord >> strand) & 1ULL;
-}
-
-typename CordBase::Flag Cord::isCordEnd(uint64_t const & cord,
-                typename CordBase::Flag const & end) const
-{
-    return cord & end;
-}
-
-void Cord::setMaxLen(String<uint64_t> & cord, uint64_t const & len, uint64_t const & mask)
-{
-    if (len > (cord[0] & mask))
-        cord[0] = len + ((cord[0]) & (~mask));
-}
-
-uint64_t Cord::getMaxLen(String<uint64_t> const & cord, uint64_t const & mask)
-{
-    if (empty(cord))
-        return 0;
-    return cord[0] & mask;
-}
-
-uint64_t Cord::shift(uint64_t const & val, int64_t x, int64_t y, unsigned const & bit) //add x and y
-{
-    if (x < 0)
-        return val - ((-x) << bit) + y;
-    else
-        return val + (x << bit) + y;
-}
-
-bool Cord::isCordsOverlap(uint64_t & val1, uint64_t & val2, int64_t thd)
-{
-    int64_t dx = _DefaultCord.getCordX(val2 - val1);
-    int64_t dy = get_cord_y(val2 - val1);
-    return (dx >= 0) && (dx < thd) && (dy >= 0) && (dy < thd);
-}
-
-bool Cord::isBlockEnd(uint64_t & val, uint64_t const & flag)
-{
-    return val & flag;
-}
-
-uint64_t get_cord_x (uint64_t val) {return _getSA_i2(_DefaultCord.getCordX(val));}
-uint64_t get_cord_y (uint64_t val) {return _DefaultCord.getCordY(val);}
-uint64_t get_cord_strand (uint64_t val) {return _DefaultCord.getCordStrand(val);}
-uint64_t get_cord_id (uint64_t val) {return _getSA_i1(_DefaultCord.getCordX(val));}
-void set_cord_end (uint64_t & val) {_DefaultCord.setCordEnd(val);}
-uint64_t create_id_x(uint64_t const id, uint64_t const x)
-{
-    return (id << _DefaultCordBase.bit_id) + x;
-}
-uint64_t create_cord (uint64_t id, uint64_t cordx, uint64_t cordy, uint64_t strand)
-{
-    return _DefaultCord.createCord(create_id_x (id, cordx), cordy, strand);
-}
-
-void cmpRevCord(uint64_t val1, 
-                    uint64_t val2,
-                    uint64_t & cr_val1,
-                    uint64_t & cr_val2,
-                    uint64_t read_len)
-{
-    cr_val1 = (val1 - get_cord_y(val1) + read_len - get_cord_y(val2) - 1) ^ _DefaultCordBase.flag_strand;
-    cr_val2 = (val2 - get_cord_y(val1) + read_len - get_cord_y(val2) - 1) ^ _DefaultCordBase.flag_strand;
-}
-uint64_t set_cord_xy (uint64_t val, uint64_t x, uint64_t y)
-{
-    return (val & (~_DefaultCordBase.valueMask)) + (x << _DefaultCordBase.bit) + y;
-}
-
-
 //======HIndex getIndexMatch()
 
+void setCordsMaxLen(String<uint64_t> & cords, uint64_t len)
+{
+    if (!empty(cords)) 
+    {
+        set_cord_y (cords[0], std::max(get_cord_y(cords[0]), len));
+
+    }
+}
+
+uint64_t getCordsMaxLen(String<uint64_t> const & cords)
+{
+    return empty(cords)?0ULL:get_cord_y(cords[0]);
+}
 int _scriptDist(int const & s1, int const & s2)
 {
     int res = std::abs((s1 & scriptMask)
@@ -625,7 +480,7 @@ void createFeatures(TIter5 const & itBegin, TIter5 const & itEnd, String<short> 
         return false;
     createFeatures(begin(read), end(read), f1);
     unsigned genomeId = get_cord_id(cords[0]);
-    while (get_cord_y(back(cords)) < length(read) - window_size)
+    while (get_cord_y(back(cords)) < length(read) - window_width)
     {
         extendWindow(f1, f2[genomeId], cords, _DefaultCord.getCordStrand(back(cords)));
         if(!nextCord(hit, currentIt, cords))
@@ -654,7 +509,7 @@ void checkPath(StringSet<String<Dna5> > & cords, StringSet<String<Dna5> > const 
         if(empty(*it))
             count++;
         else
-            if (get_cord_y(back(*it)) + window_size * 2 < length(read))
+            if (get_cord_y(back(*it)) + window_width * 2 < length(read))
             {
                 count++;
             }
@@ -665,77 +520,7 @@ void checkPath(StringSet<String<Dna5> > & cords, StringSet<String<Dna5> > const 
 /**================================================================
  *  The following part implements different method of mapping 
  */
- void Hit::setBlockStart(uint64_t & val, uint64_t const & flag)
-{
-    val |= flag;
-}
-
- void Hit::setBlockBody(uint64_t & val, uint64_t const & flag)
-{
-    val &= (~flag);
-}
-
- bool Hit::isBlockStart(uint64_t & val, uint64_t const & flag)
-{
-    return val & flag;
-}
-
- void Hit::setBlockEnd(uint64_t & val, uint64_t const & flag)
-{
-    val |= flag;
-}
-
- void Hit::unsetBlockEnd(uint64_t & val, uint64_t const & flag)
-{
-    val &= ~flag;
-}
-
- void Hit::setBlockStrand(uint64_t & val, uint64_t const & strand, uint64_t const & flag)
-{
-    if (strand)
-        val |= flag;
-    else
-        val &= ~flag;
-}
-
- bool Hit::isBlockEnd(uint64_t & val, uint64_t const & flag)
-{
-    return val & flag;
-}
-
- unsigned Hit::getStrand(uint64_t const & val, uint64_t const & flag)
-{
-    return (val & flag)?1:0;
-}
-
-void _printHit(unsigned j, unsigned id1, unsigned id2, String<uint64_t> & hit, unsigned len)
-{
-    unsigned end;
-    for (unsigned k = 0; k < length(hit); k++)
-    {
-        if (_DefaultHit.isBlockEnd(hit[k]))
-            end = 1;
-        else
-            end = 0;
-        printf("[printhit] %d %d %d %d %d\n", j, id1, id2, len, end);
-    }
-}
-
-void _printHit(String<uint64_t>  & hit)
-{
-    for (unsigned k = 0; k < length(hit); k++)
-    {
-        std::cout << "[P]::_printHit() " 
-              << _getSA_i1(_DefaultCord.getCordX(_DefaultCord.hit2Cord(hit[k]))) << " " 
-              << _getSA_i2(_DefaultCord.getCordX(_DefaultCord.hit2Cord(hit[k]))) << " " 
-              << get_cord_y(hit[k]) << "\n";
-        if (_DefaultHit.isBlockEnd(hit[k]))
-        {
-            std::cout << "[P]::_printHit() end\n";
-        }
-    }
-}
-
+ 
 //===!Note:Need to put this parameterin the mapper threshold
 /*
 template <typename TDna, typename TSpec>
@@ -1094,12 +879,12 @@ template <typename TDna, typename TSpec>
     return true;
 }
 
- bool endCord( String<uint64_t> & cord,
-                     unsigned & preCordStart
-                   )
+bool endCord( String<uint64_t> & cords,
+               unsigned & preCordStart
+            )
 {
-    _DefaultHit.setBlockEnd(back(cord));
-    _DefaultCord.setMaxLen(cord, length(cord) - preCordStart);
+    _DefaultHit.setBlockEnd(back(cords));
+    setCordsMaxLen(cords, length(cords) - preCordStart);
     return true;
 }
 /*
@@ -1112,7 +897,7 @@ template <typename TDna, typename TSpec>
                      float & score
                    )
 {
-    _DefaultCord.setMaxLen(cord, length(cord) - preCordStart);   
+    _DefaultCord.setCordsMaxLen(cord, length(cord) - preCordStart);   
     if (length(cord) - preCordStart > cordThr)
     {
 
@@ -1131,19 +916,19 @@ template <typename TDna, typename TSpec>
 /*
  * endCord for double strand index
  */
- bool endCord( String<uint64_t> & cord,
+ bool endCord( String<uint64_t> & cords,
                      unsigned & preCordStart,
                      float const & cordThr,
                      float & score)
 {
-    _DefaultCord.setMaxLen(cord, length(cord) - preCordStart);   
-    if (length(cord) - preCordStart > cordThr)// > std::max(score/25, cordThr))
+    setCordsMaxLen(cords, length(cords) - preCordStart);   
+    if (length(cords) - preCordStart > cordThr)// > std::max(score/25, cordThr))
     {
-        _DefaultHit.setBlockEnd(back(cord));
+        _DefaultHit.setBlockEnd(back(cords));
     }
     else
     {
-        erase(cord, preCordStart, length(cord));
+        erase(cords, preCordStart, length(cords));
     }
     (void)score;
     return true;
@@ -1171,7 +956,7 @@ template <typename TDna, typename TSpec>
     _DefaultHit.setBlockEnd(back(cord));
     if(it < hitEnd)
     {
-        _DefaultCord.setMaxLen(cord, length(cord) - preCordStart);
+        _DefaultCord.setCordsMaxLen(cord, length(cord) - preCordStart);
         preCordStart = length(cord);
         appendValue(cord, _DefaultCord.hit2Cord(*(it)));
         ++it;
@@ -1218,7 +1003,7 @@ template <typename TDna, typename TSpec>
         }
         else
         {
-            _DefaultCord.setMaxLen(cord, length(cord) - preCordStart);
+            _DefaultCord.setCordsMaxLen(cord, length(cord) - preCordStart);
         }
         preCordStart = length(cord);
         appendValue(cord, _DefaultCord.hit2Cord(*(it)));
@@ -1266,7 +1051,7 @@ template <typename TDna, typename TSpec>
         }
         else
         {
-            _DefaultCord.setMaxLen(cord, length(cord) - preCordStart);
+            setCordsMaxLen(cord, length(cord) - preCordStart);
     //printf("[debug]::nextcord new block %f %d %f\n", (float)score/(length(cord) - preCordStart), length(cord) - preCordStart, cordThr);
         }
         preCordStart = length(cord);
@@ -1347,7 +1132,7 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
  * Extend windows between cord1, and cord2 if they are not overlapped,
  * and insert the windows to the k th element of the cords. 
  * if cord1 and cord2 have the same strand 
- * then call previousWindow for cord1 and nextWindow for cord2 until x1 + window_size < x2
+ * then call previousWindow for cord1 and nextWindow for cord2 until x1 + window_width < x2
  * if cord1 and cord2 have different strand 
  * then call nextWindow for cord1 and previousWindow for cord2 along each own strand until it can't be extended any more.
  * 
@@ -1467,7 +1252,7 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     String<int> f1;
     typename Iterator<String<uint64_t> >::Type it = hitBegin;
     unsigned preBlockPtr;
-    float cordLenThr = length(read) * cordThr / window_size;
+    float cordLenThr = length(read) * cordThr / window_width;
     float score = 0;
     createFeatures(begin(read), end(read), f1);
     if(initCord(it, hitEnd, preBlockPtr, cords))
@@ -1497,7 +1282,7 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     String<int> f1;
     typename Iterator<String<uint64_t> >::Type it = hitBegin;
     unsigned preBlockPtr;
-    float cordLenThr = length(read) * cordThr / window_size;
+    float cordLenThr = length(read) * cordThr / window_width;
     float score = 0;
     createFeatures(begin(read), end(read), f1);
     if(initCord(it, hitEnd, preBlockPtr, cords))
@@ -1554,8 +1339,8 @@ int rawMap_dst( LIndex   & index,
   
     typedef String<Dna5> Seq;
     double time=sysTime();
-    float senThr = mapParm.senThr / window_size;
-    float cordThr = mapParm.cordThr / window_size;
+    float senThr = mapParm.senThr / window_width;
+    float cordThr = mapParm.cordThr / window_width;
     MapParm complexParm = mapParm;
     complexParm.alpha = complexParm.alpha2;
     complexParm.listN = complexParm.listN2;
@@ -1604,9 +1389,7 @@ int rawMap_dst( LIndex   & index,
             clear(crhit);
             mnMapReadList(index, reads[j], anchors, mapParm, crhit);
             path_dst(begin(crhit), end(crhit), f1, f2, cordsTmp[c], cordLenThr);
-            //printf("done1\n");
-            if (_DefaultCord.getMaxLen(cordsTmp[c]) < length(reads[j]) * senThr)// && 
-               //_DefaultCord.getMaxLen(cordsTmp[c]) > 0)
+            if (getCordsMaxLen(cordsTmp[c]) < length(reads[j]) * senThr)
             {
                 clear(cordsTmp[c]);
                 anchors.init(1);

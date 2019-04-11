@@ -27,6 +27,7 @@ endif()
 # Search SeqAn and select dependencies.
 set (SEQAN_FIND_DEPENDENCIES NONE)
 find_package (SeqAn REQUIRED)
+find_package(GTest)
 
 # ----------------------------------------------------------------------------
 # Build Setup
@@ -34,7 +35,7 @@ find_package (SeqAn REQUIRED)
 
 # Add include directories.
 include_directories (${SEQAN_INCLUDE_DIRS})
-
+include_directories (${GTEST_INCLUDE_DIRS})
 # Add definitions set by find_package (SeqAn).
 add_definitions (${SEQAN_DEFINITIONS})
 
@@ -46,17 +47,17 @@ add_definitions (-DSEQAN_DATE="${SEQAN_DATE}")
 
 add_library(linear_base STATIC base.cpp)
 add_library(linear_index_util STATIC index_util.cpp)
+add_library(linear_cord STATIC cord.cpp)
 add_library(linear_pmpfinder STATIC pmpfinder.cpp)
 add_library(linear_gap STATIC gap.cpp)
 add_library(linear_fio STATIC f_io.cpp)
 add_library(linear_align STATIC align_interface.cpp)
 add_library(linear_args_parser STATIC args_parser.cpp)
 
-add_executable (linear mapper.cpp mapper.h base.h index_util.h pmpfinder.h gap.h align_interface.h f_io.h args_parser.h) 
-target_link_libraries (linear ${SEQAN_LIBRARIES} linear_base linear_index_util linear_pmpfinder linear_gap linear_fio linear_align linear_args_parser)
+add_executable (linear mapper.cpp mapper.h base.h index_util.h cord.h pmpfinder.h gap.h align_interface.h f_io.h args_parser.h) 
+target_link_libraries (linear ${SEQAN_LIBRARIES} linear_base linear_index_util linear_cord linear_pmpfinder linear_gap linear_fio linear_align linear_args_parser)
 add_executable (test_case test_case.cpp mapper.h base.h index_util.h pmpfinder.h gap.h align_interface.h f_io.h)
-target_link_libraries (test_case ${SEQAN_LIBRARIES} linear_base linear_index_util linear_pmpfinder linear_gap linear_fio linear_align)
-
+target_link_libraries (test_case ${GTEST_LIBRARIES} ${SEQAN_LIBRARIES} linear_base linear_index_util linear_cord linear_pmpfinder linear_gap linear_fio linear_align linear_args_parser)
 # Add CXX flags found by find_package (SeqAn).
 SET(GCC_COVERAGE_COMPILE_FLAGS "-fprofile-arcs -ftest-coverage")
 SET(GCC_COVERAGE_LINK_FLAGS    "-lgcov")
