@@ -47,6 +47,7 @@ add_definitions (-DSEQAN_DATE="${SEQAN_DATE}")
 
 add_library(linear_base STATIC base.cpp)
 add_library(linear_index_util STATIC index_util.cpp)
+#add_library(linear_index_util2 STATIC index_util2.cpp)
 add_library(linear_cord STATIC cord.cpp)
 add_library(linear_pmpfinder STATIC pmpfinder.cpp)
 add_library(linear_gap STATIC gap.cpp)
@@ -59,7 +60,7 @@ add_executable (linear linear.cpp)
 target_link_libraries (linear ${SEQAN_LIBRARIES} linear_mapper linear_args_parser linear_align linear_fio linear_gap linear_pmpfinder linear_cord linear_index_util linear_base)
 
 add_executable (test_case test_case.cpp)
-target_link_libraries (test_case ${GTEST_LIBRARIES} ${SEQAN_LIBRARIES} linear_base linear_index_util linear_cord linear_pmpfinder linear_gap linear_fio linear_align linear_args_parser linear_mapper)
+target_link_libraries (test_case ${GTEST_LIBRARIES} ${SEQAN_LIBRARIES} linear_mapper linear_args_parser linear_align linear_fio linear_gap linear_pmpfinder linear_cord linear_index_util  linear_base)
 # Add CXX flags found by find_package (SeqAn).
 #SET(COMP_PROF_FLAGS "-ftime-report")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS} ${CXX11_CXX_FLAGS} ${COMP_PROF_FLAGS}")
