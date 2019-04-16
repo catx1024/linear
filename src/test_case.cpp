@@ -10,42 +10,33 @@
 #include "gap.h"
 #include "align_interface.h"
 #include "args_parser.h"
+#include "index_util2.h"
 
 using ::testing::TestWithParam;
 using ::testing::Values;
-class FooTest :public ::testing::TestWithParam<char*> {
-     public:
-  ~FooTest() override {}
-  void SetUp() override { val = GetParam(); }
-  void TearDown() override {}
- protected:
-    char* val;
 
-};
-
-TEST_P(FooTest, DoesBlah) {
-  // Inside a test, access the test parameter with the GetParam() method
-  // of the TestWithParam<T> class:
-ASSERT_EQUAL(1,1);
-
+int testCreateDIndx(DIndex & index_d, Mapper & mapper)
+{
+    createDIndex (mapper.genomes(), index_d);
 }
-INSTANTIATE_TEST_SUITE_P(DoesBlah,
-                         FooTest,
-                        ::testing::Values("meeny", "miny", "moe"));
+
+TEST(DIndex, create) 
+{
+    //createDIndex()
+    ASSERT_EQ(1,1) ;
+}
 
 int main(int argc, char ** argv)
 {
-    /*
     std::cerr << "Linear unit test[]" << std::endl;
     Options options;
     seqan::ArgumentParser::ParseResult res = parseCommandLine(options, argc, argv);
     if (res != seqan::ArgumentParser::PARSE_OK)
         return res == seqan::ArgumentParser::PARSE_ERROR;
-        */
-    //Mapper mapper(options);
+    Mapper mapper(options);
+    DIndex index_d(14);
+    testCreateDIndx(index_d, mapper);
     testing::InitGoogleTest(&argc, argv);
-
- //FooTest foo;
 
     return RUN_ALL_TESTS();
     return 0;

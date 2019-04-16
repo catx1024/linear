@@ -19,7 +19,7 @@ public:
     uint64_t strand;
     int leftChar;
     int x;
-
+    
     LShape(unsigned span):
         span(span),
         weight(span - 8),
