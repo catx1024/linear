@@ -23,9 +23,10 @@ public:
     LShape & getShape();
     int fullSize();
     int getShapeLen();
-    void setHsValue(int64_t i_hs, int64_t gId, int64_t gPos, LShape & shape);
 }; 
 int createDIndex(StringSet<String<Dna5> > & seqs, DIndex & index);
+int64_t queryHsStr(DIndex & index, int64_t xval);
+int64_t queryHsEnd(DIndex & index, int64_t xval);
 
 
 #endif

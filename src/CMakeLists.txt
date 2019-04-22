@@ -64,8 +64,8 @@ target_link_libraries (test_case ${GTEST_LIBRARIES} ${SEQAN_LIBRARIES} linear_ma
 # Add CXX flags found by find_package (SeqAn).
 #SET(COMP_PROF_FLAGS "-ftime-report")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS} ${CXX11_CXX_FLAGS} ${COMP_PROF_FLAGS}")
-#set (CMAKE_BUILD_TYPE Release)
-set (CMAKE_BUILD_TYPE Debug)
+set (CMAKE_BUILD_TYPE Release)
+#set (CMAKE_BUILD_TYPE Debug)
 
 # ----------------------------------------------------------------------------
 # Installation
