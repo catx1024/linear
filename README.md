@@ -29,5 +29,5 @@ Linear is licensed under the 3-clause BSD license
 
 
 
-<img src="images/logo.svg" width="330">
+<img src="images/2.png" width="330">
 

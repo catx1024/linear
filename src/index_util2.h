@@ -24,7 +24,7 @@ public:
     int fullSize();
     int getShapeLen();
 }; 
-int createDIndex(StringSet<String<Dna5> > & seqs, DIndex & index);
+int createDIndex(StringSet<String<Dna5> > &, DIndex &, int64_t, int64_t);
 int64_t queryHsStr(DIndex & index, int64_t xval);
 int64_t queryHsEnd(DIndex & index, int64_t xval);
 
