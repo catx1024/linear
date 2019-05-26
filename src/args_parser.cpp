@@ -1,11 +1,51 @@
 #include <seqan/arg_parse.h>
 #include "base.h"
+using std::vector;
+using std::string;
+using std::cerr;
+using std::cout;
 std::string CARTESIAN = "x";
+//if @s is an number
+bool is_IntStr(const std::string & s)
+{
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+}
+
 seqan::ArgumentParser::ParseResult
-parseCommandLine(Options & options, int argc, char const ** argv)
+parseCommandLine(Options & options, int argc, char const ** argv_)
 {
     char const * str_g = "-g";
-
+    vector<string> argvs;
+    for (int i = 0; i < argc; i++)
+    {
+        if (strcmp(argv_[i], "-a") == 0 ||
+            strcmp(argv_[i], "-g") == 0 
+            ) 
+        {
+            if (i + 1 < argc && is_IntStr(std::string(argv_[i + 1])))
+            {
+                //std::stoi(string(argv_[i + 1]));
+                argvs.push_back(string(argv_[i]));
+                argvs.push_back(string(argv_[i + 1]));
+                i++;
+            }
+            else
+            {
+                
+            }
+        }
+        else
+        {
+            argvs.push_back(string(argv_[i]));
+        }
+    }
+    for (auto tmp : argvs)
+    {
+        cerr::<<"argumen " << tmp << " ";
+    }
+    cerr << "\n";
     // Setup ArgumentParser.
     seqan::ArgumentParser parser("Linear");
     // Set short description, version, and date.
