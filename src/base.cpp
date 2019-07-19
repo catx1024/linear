@@ -133,7 +133,7 @@ int readRecords_block (StringSet<CharString> & ids, StringSet<String<Dna5> > & r
 /*
  *[]::load all records in one genome file
  */
-std::pair<uint, uint> loadRecords(StringSet<String<Dna5> > & seqs, 
+std::pair<uint, uint> _loadRecords(StringSet<String<Dna5> > & seqs, 
             StringSet<CharString> & ids, 
             Options::PathType path
             )
@@ -239,7 +239,7 @@ int loadRecords(StringSet<String<Dna5> > & seqs,
     for (uint i = 0 ; i < length(paths); i++)
     {
         double time = sysTime();
-        std::pair<uint, uint> res = loadRecords(seqs, ids, paths[i]);
+        std::pair<uint, uint> res = _loadRecords(seqs, ids, paths[i]);
         uint len_sum = res.first;
         uint seqCount = res.second; 
         if (len_sum == ~0 || seqCount == ~0)
@@ -415,6 +415,7 @@ Dout & Dout::operator << (int64_t n)
 Dout & Dout::operator << (uint64_t n)
 {
     std::cout << n << " "; 
+    return *this;
 }
 Dout & Dout::operator << (CharString n)
 {

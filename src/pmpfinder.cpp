@@ -443,7 +443,10 @@ int createFeatures48(TIter5 it_str, TIter5 it_end, String<int96> & f, unsigned t
     {
         return 0;
     }
-    resize (f, ((it_end - it_str - window) >> scpt_bit) + 1);
+    return 0;  
+    std::cerr << "resize size " << 598 << "\n";
+    resize (f, 598);
+    //resize (f, ((unsigned(it_end - it_str - window)) >> scpt_bit) + 1);
     int64_t range = (it_end - it_str - window) / scpt_step + 1; //numer of windows 
     if (range < threads)
     {
@@ -574,6 +577,7 @@ int createFeatures(TIter5 it_str, TIter5 it_end, FeaturesDynamic & f, unsigned t
 {
     if (f.isFs1_32())
     {
+    return 0;
         createFeatures1_32(it_str, it_end, f.fs1_32, threads);
     }
     else if (f.isFs2_48())
@@ -592,6 +596,7 @@ int createFeatures(StringSet<String<Dna5> > & seq,
         f[k].setFeatureType(feature_type);
         createFeatures(begin(seq[k]), end(seq[k]), f[k]);
     }
+    return 0;
 }
 int createFeatures(StringSet<String<Dna5> > & seq, 
                    StringSet<FeaturesDynamic> & f, 
@@ -604,6 +609,7 @@ int createFeatures(StringSet<String<Dna5> > & seq,
         f[k].setFeatureType(feature_type);
         createFeatures(begin(seq[k]), end(seq[k]), f[k], threads);
     }
+    return 0;
 }
 
 /*----------  Dynamic programming of extending path (tiles)  ----------*/

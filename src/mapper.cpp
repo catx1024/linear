@@ -381,10 +381,12 @@ int map(Mapper & mapper, int p1)
     //std::cout << "ddd " << fm_handler_.isAlign(mapper.getMapFlag()) << "\n";
     int thd_buffer_size = 10000; // every thd_buffer_size reads triggers print results.
     //serr.print_message("=>Create index", 0, 1, std::cerr);
+
     omp_set_num_threads(mapper.thread());
     mapper.createIndex(false); // true: destruct genomes string to reduce memory footprint
     StringSet<FeaturesDynamic> f2;
     createFeatures(mapper.getGenomes(), f2, mapper.getFeatureType(), mapper.thread());
+    return 0;
     std::cout << "mapf " << mapper.getFeatureType() << "\n";
     unsigned blockSize = 50000;
     SeqFileIn rFile;

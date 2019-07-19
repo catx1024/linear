@@ -164,8 +164,8 @@ public:
 
     String<HType1>     ysa;
     XString            xstr;
-    LShape             shape;
     double             alpha;    
+    LShape             shape;
     uint64_t emptyDir;
 
     HIndex();

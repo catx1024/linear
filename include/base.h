@@ -52,7 +52,7 @@ struct Options{
 }; 
 
 std::pair<uint, uint> 
-loadRecords(StringSet<String<Dna5> > & seqs, 
+_loadRecords(StringSet<String<Dna5> > & seqs, 
             StringSet<CharString> & ids, 
             Options::PathType path);
 int loadRecords(StringSet<String<Dna5> > & seqs, 

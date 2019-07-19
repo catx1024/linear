@@ -231,7 +231,7 @@ XString::XString(uint64_t const & seqlen)
  void XString::clear()
 {
     seqan::clear(xstring);
-    shrinkToFit(xstring);
+    //shrinkToFit(xstring);
 }
 
  bool Hs::isHead(uint64_t const & val, uint64_t const & flag)
@@ -321,7 +321,7 @@ bool HIndex::isEmptyDir(uint64_t pos)
 void HIndex::clear()
 {
     seqan::clear(ysa);
-    shrinkToFit(ysa);
+    //shrinkToFit(ysa);
     xstr.clear();
 }
 /*
@@ -567,16 +567,16 @@ void HIndex::clear()
 }
 
  bool _hsSortY_SA(Iterator<String<uint64_t> >::Type const & begin, 
-                        Iterator<String<uint64_t> >::Type const & end) 
+                  Iterator<String<uint64_t> >::Type const & end) 
 {
     typedef typename Iterator<String<uint64_t> >::Type TIter;
     typedef typename Value<TIter>::Type ValueType;
     uint64_t k = 0, ptr;
-    unsigned sortModeThr = 20;
-    while (k < end - begin)
+    uint64_t sortModeThr = 20;
+    while (k < uint64_t(end - begin))
     {
         ptr = _DefaultHs.getHeadPtr(*(begin + k));
-        if (ptr< sortModeThr)
+        if (ptr < sortModeThr)
             insertSort(begin + k + 1, begin + k + ptr);
         else
             std::sort(begin + k + 1, begin + k + ptr, std::greater<ValueType>());
@@ -773,7 +773,7 @@ void HIndex::clear()
     if (efficient)
     {
         clear(seq);
-        shrinkToFit(seq);   
+        //shrinkToFit(seq);   
     }
     _DefaultHs.setHsHead(hs[hsRealEnd], 0, 0);
     //std::cerr << "[debug] length of hs " << length(hs) << " " << hsRealEnd << "\n";
@@ -808,8 +808,8 @@ void HIndex::clear()
             String<uint64_t> hsTmp;
             clear(hsTmp);
             uint64_t preX = ~0;
-            int64_t ptr = 2;
-            int64_t kn = 0;
+            uint64_t ptr = 2;
+            uint64_t kn = 0;
             bool flag = true; // if it is the first k for each thread then true;
             #pragma omp for
             for (uint64_t k = 0; k < length(seq[j]); k++)
@@ -854,7 +854,6 @@ void HIndex::clear()
         }
     }
     clear(seq);
-    shrinkToFit(seq);
     appendValue(hs, _DefaultHs.makeHsHead(0, 0));
     std::cerr << "[debug] length of hs " << length(hs)  << " lengthsum " << lengthSum(seq) * 2 / step << "\n";
     std::cerr << "      init Time[s]" << sysTime() - time << " " << std::endl;
@@ -1015,7 +1014,7 @@ bool checkHsSort(String<uint64_t> const & hs)
     return 0;
 }
 
- uint64_t getXDir(HIndex const & index, uint64_t const & xval, uint64_t const & yval)
+uint64_t getXDir(HIndex const & index, uint64_t const & xval, uint64_t const & yval)
 {
     uint64_t val, delta = 0;
     uint64_t h1 = _DefaultXNodeFunc.hash(xval) & index.xstr.mask;
@@ -1052,7 +1051,7 @@ bool checkHsSort(String<uint64_t> const & hs)
     return index.emptyDir;
 }
 
- uint64_t getXYDir(HIndex const & index, uint64_t const & xval, uint64_t const & yval)
+uint64_t getXYDir(HIndex const & index, uint64_t const & xval, uint64_t const & yval)
 {
     uint64_t val, delta = 0;
     uint64_t h1 = _DefaultXNodeFunc.hash(xval) & index.xstr.mask;
@@ -1078,13 +1077,13 @@ bool checkHsSort(String<uint64_t> const & hs)
                     if (yval > _DefaultHs.getHsBodyY(index.ysa[pos]))
                         return index.emptyDir;
                 }while(_DefaultHs.isBody(index.ysa[++pos]));
+                break;
                 //return _DefaultXNodeFunc.makeReturnVal(index.xstr.xstring[h1]);
             case 2:
 //!!!!! need to modify;
                 val = (yval << 42) + (xval << 2) + _DefaultXNodeBase.xHead;
                 h1 = _DefaultXNodeFunc.hash((yval << 40) + xval) & index.xstr.mask;
                 delta = 0;
-                //std::cerr << "case2\n" ;
                 break;
             //case 3:
             //    return ( ^ shape.yvalue)?index.xstr[h1].val2:_DefaultXNodeBase._Empty_Dir_;
@@ -1422,7 +1421,7 @@ bool createHIndex(StringSet<String<Dna5> > & seq, HIndex & index, unsigned & thr
     return _createQGramIndexDirSA_parallel(seq, index.xstr, index.ysa, index.shape, index.emptyDir, threads, efficient);
 }
 
-bool _createQGramIndex(HIndex & index, StringSet<String<Dna5> > & seq, unsigned threads = 1)
+bool _createQGramIndex(HIndex & index, StringSet<String<Dna5> > & seq)
 {
     return _createQGramIndexDirSA(seq, index.xstr, index.ysa, index.shape, index.emptyDir);
 }
@@ -1644,6 +1643,7 @@ int createDIndex(StringSet<String<Dna5> > & seqs,
     std::cout << "createDIndex " << sysTime() - t << " " << sysTime() - t2 << "\n";
     serr.print_message("Index::hash        ", 2, 1, std::cerr);
     serr.print_message("End createing index", 2, 1, std::cerr);
+    return 0;
 }
 
 int64_t queryHsStr(DIndex & index, int64_t xval)
@@ -1698,6 +1698,6 @@ bool createIndexDynamic(StringSet<String<Dna5> > & seqs, IndexDynamic & index, u
     {
         return createHIndex(seqs, index.hindex, threads, efficient);
     }
-
+    return true;
 }
 
