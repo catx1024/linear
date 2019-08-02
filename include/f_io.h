@@ -2,6 +2,7 @@
 #define LINEAR_HEADER_F_IO_H
 
 #include <seqan/bam_io.h>
+#include "base.h"
 #include "cords.h"
 #include "align_util.h"
 using namespace seqan;
@@ -98,4 +99,8 @@ void print_cords_sam (StringSet<String<uint64_t> > & cordset_str,
                       std::ofstream & of,
                       uint64_t thd_large_X
                       );
+
+void printParmBase2Json(std::ofstream & of, ParmBase & parm);
+
+
 #endif

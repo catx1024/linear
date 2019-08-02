@@ -1,11 +1,12 @@
 #include <utility> 
-#include "base.h"
+//#include "json.hpp"
 #include "shape_extend.h"
 #include "cords.h"
-#include "gap.h"
-
+#include "gap.h" 
+  
 //NOTE::clip & map direction:: towards left < 0, right > 0, both 0
-using std::endl;
+using std::endl; 
+
 /*=============================================
 =               Glaobal Utilities             =
 =============================================*/
@@ -1492,27 +1493,21 @@ unsigned _get_tile_f_tri_ (uint64_t & tile,
 
 //!!TODO::[Important] tune the parm, especially the thD_err_rate [ing] 
 //Parms of function map_g_Anchor2_
-struct MapGAnchor2Parm_
+MapGAnchor2Parm_::MapGAnchor2Parm_ (int thD_tile_size, float thD_err_rate) 
 {
-    int thd_pattern_in_window;
-    int thd_overlap_size;
-    int thd_gap_size;
-    float thd_overlap_tile;
-    float thd_swap_tile;
-    float thd_anchor_density;
-    int64_t thd_min_segment;
+    appendValue(ints, ParmKeyInts("thd_pattern_in_window", 1));
+    appendValue(ints, ParmKeyInts("thd_overlap_size", 170));
+    appendValue(ints, ParmKeyInts("thd_gap_size", 180));
 
-    MapGAnchor2Parm_ (int thD_tile_size, float thD_err_rate) 
-    {
-        thd_pattern_in_window = 1;
-        thd_overlap_size = 170;
-        thd_gap_size = 180;
-        thd_overlap_tile = thD_tile_size * 0.4;
-        thd_swap_tile = thD_tile_size * 0.05;
-        thd_anchor_density = 0.03;
-        thd_min_segment = 100;
-    }
-};
+    appendValue(flts, ParmKeyFlts("thd_overlap_tile", thD_tile_size * 0.4));
+    appendValue(flts, ParmKeyFlts("thd_swap_tile", thD_tile_size * 0.05));
+    appendValue(flts, ParmKeyFlts("thd_anchor_density", 0.03));
+
+    appendValue(llts, ParmKeyLlts("thd_min_segment", 100));
+
+    name = "MapGAnchor2Parm_";
+    //next = nullptr;
+}
 
 //Function wrapper
 int map_g_anchor2_ (String<uint64_t> & anchor, 
@@ -1533,25 +1528,26 @@ int map_g_anchor2_ (String<uint64_t> & anchor,
                            revscomp_const, direction,
                            thD_tile_size,
                            thD_err_rate,
-                           parm.thd_pattern_in_window,
-                           parm.thd_overlap_size,
-                           parm.thd_gap_size,
-                           parm.thd_overlap_tile,
-                           parm.thd_swap_tile,
-                           parm.thd_anchor_density,
-                           parm.thd_min_segment
+                           parm.ints[0].second,
+                           parm.ints[1].second,
+                           parm.ints[2].second,
+                           parm.flts[0].second,
+                           parm.flts[1].second,
+                           parm.flts[2].second,
+                           parm.llts[0].second
                            );
 }
 /**
  * Main Function Parm Wrapper 
  */
-struct MapGAnchorParm
+MapGAnchorParm::MapGAnchorParm(int thD_tile_size, float thD_err_rate)
 {
-    MapGAnchor2Parm_ mapGAnchor2parm_;
-    MapGAnchorParm(int thD_tile_size, float thD_err_rate):
-        mapGAnchor2parm_(thD_tile_size, thD_err_rate)
-    {};
+    name = "MapGAnchorParm";
+    MapGAnchor2Parm_ * tmp = new MapGAnchor2Parm_ (thD_tile_size, thD_err_rate);
+    dout << "nextparmname" << tmp->name << "\n";
+    appendValue (nexts, tmp); //be sure it's the nexts[0]
 };
+
 /**
  * Main Function MapAnchor_ 
  */
@@ -1569,7 +1565,15 @@ int map_g_anchor (String<uint64_t> & anchor,
                   MapGAnchorParm const & parm
                   )
 {
-    return map_g_anchor2_(anchor, tiles, f1, f2, cord_str, cord_end, anchor_end, revscomp_const, direction, thD_tile_size, thD_err_rate, parm.mapGAnchor2parm_);
+    //if (parm.nexts[0]->name == "MapGAnchor2Parm_")
+    //{
+    dout << "parmnext" << parm.nexts[0]->name;
+        return map_g_anchor2_(anchor, tiles, f1, f2, cord_str, cord_end, anchor_end, revscomp_const, direction, thD_tile_size, thD_err_rate, *(parm.nexts[0]));
+    //}
+    //else
+    //{
+     //   return -1;
+    //}
 }
 
 /**
@@ -1736,7 +1740,7 @@ int try_tiles_dup(String<Dna5> & seq,
                   uint64_t tile2,
                   float thD_err_rate,
                   uint64_t thD_tile_size,
-                  MapGAnchorParm parm1)
+                  MapGAnchorParm const & parm1)
 {
     //shortcut to call dup for tiles
     uint64_t gap_str = tile1;
@@ -3404,6 +3408,18 @@ void _updateCordsStrEndValue(String<uint64_t> & cords_str,
     set_cord_xy (cords_end[i], get_cord_x(cord2), get_cord_y(cord2));
 }
 
+MapGapsParm::MapGapsParm(int thD_tile_size, float thD_err_rate)
+{
+    name = "MapGapsParm";
+    MapGAnchorParm * tmp = new MapGAnchorParm(thD_tile_size, thD_err_rate);
+
+    appendValue(nexts, tmp);
+};
+MapGAnchorParm* MapGapsParm::getNext0 ()
+{
+    return static_cast<MapGAnchorParm *> (nexts[0]);
+}
+
 /**
  * Re-map gaps in cords.
  * Gaps at the front or end of the cords are also remapped.
@@ -3425,6 +3441,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
             float thD_err_rate
            )
 {
+    //MapGapParmParser();
     CmpInt64 g_cmpll;
     if (length(cords_str) <= 1)
     {
@@ -3448,7 +3465,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
     int64_t thd_cord_remap = 100;
     int64_t thd_cord_gap = thd_gap + block_size;
 
-    MapGAnchorParm parm1(thD_tile_size, thD_err_rate);
+    MapGapsParm parm1(thD_tile_size, thD_err_rate);
 
     clear(apx_gaps);
     gather_blocks_ (cords_str, str_ends, str_ends_p, length(read), thd_cord_gap, thd_cord_size, 0);
@@ -3505,7 +3522,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                              thd_cord_remap,
                              thD_err_rate,
                              thd_dxy_min,
-                             parm1);
+                             *(parm1.nexts[0]));
 
                     insert_tiles2Cords_(cords_str, cords_end, i, tiles_str, tiles_end, direction, thd_cord_size);
                 }
@@ -3544,7 +3561,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                                 thD_tile_size,
                                 thd_cord_remap,
                                 thD_err_rate,
-                                thd_dxy_min, parm1);
+                                thd_dxy_min, *(parm1.nexts[0]));
                     insert_tiles2Cords_(cords_str, cords_end, i, tiles_str, tiles_end, direction, thd_cord_size);
                 }
             }
@@ -3574,7 +3591,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                     thd_cord_remap,
                     thD_err_rate,
                     thd_dxy_min, 
-                    parm1);
+                    *(static_cast<MapGAnchorParm*>(parm1.nexts[0])));
             insert_tiles2Cords_(cords_str, cords_end, i, tiles_str, tiles_end, direction, thd_cord_size);
         }
         if (_DefaultHit.isBlockEnd(cords_str[i]))  ///right clip end cord
@@ -3613,7 +3630,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                              thd_cord_remap,
                              thD_err_rate,
                              thd_dxy_min,
-                             parm1);
+                             *(static_cast<MapGAnchorParm*>(parm1.nexts[0])));
                     insert_tiles2Cords_(cords_str, cords_end, i, tiles_str, tiles_end, direction, thd_cord_size);
                 }
                 else
@@ -3652,7 +3669,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                                 thd_cord_remap,
                                 thD_err_rate,
                                 thd_dxy_min, 
-                                parm1);
+                                parm1.getNext0());
                     dout << "ccend2 " << get_cord_y(gap_str) << "\n";
                     insert_tiles2Cords_(cords_str, cords_end, i, tiles_str, tiles_end, direction, thd_cord_size);
                     print_cords(cords_str, "ccend21");

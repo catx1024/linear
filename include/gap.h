@@ -1,6 +1,7 @@
 #ifndef LINEAR_HEADER_GAP_H
 #define LINEAR_HEADER_GAP_H
 #include <seqan/sequence.h>
+#include "base.h"
 #include "pmpfinder.h"
 
 using namespace seqan;
@@ -15,8 +16,26 @@ void insertClipStr(String<uint64_t> &, uint64_t);
 void insertClipEnd(String<uint64_t> &, uint64_t);
 bool isClipEmpty(uint64_t);
 
+// ====== Section of Parm declaration =======
+typedef ParmBase MapGapParmType;
+
+struct MapGAnchor2Parm_ : MapGapParmType 
+{
+    MapGAnchor2Parm_ (int thD_tile_size, float thD_err_rate); 
+};
+struct MapGAnchorParm : MapGapParmType
+{
+    MapGAnchorParm(int thD_tile_size, float thD_err_rate);
+};
+
+struct MapGapsParm : MapGapParmType 
+{
+    //MapGAnchorParm  map_g_anchor_parm;
+    MapGapsParm(int thD_tile_size, float thD_err_rate);
+};  
 
 
+//=====  Section of Function declaration ======
 /**
  * Re-map gaps in cords.
  * Gaps at the beginning and the end of the read are also included.

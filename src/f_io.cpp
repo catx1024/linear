@@ -1,13 +1,14 @@
-#include <iostream>
+#include <ostream>
 #include <fstream>
 #include <seqan/basic.h>
-#include "cords.h"
+#include "json.hpp"
 #include "pmpfinder.h"
 #include "align_util.h"
 #include "f_io.h"
 
 using namespace seqan;
 using std::cout;
+using Json = nlohmann::json;
 /*============================================================
 =               print Approximate mapping records            =
 ============================================================*/
@@ -693,3 +694,30 @@ void print_cords_sam
     cords2BamLink (cordset_str, cordset_end, bam_records, thd_cord_size, thd_large_X);
     print_align_sam (genms, genmsId, readsId, bam_records, of);
 }   
+
+void parmBase2Json(std::ofstream & of, ParmBase & parm)
+{
+    //do
+    //{
+
+    Json parmJson1 (parm.ints);
+    Json parmJson2 (parm.uits);
+    Json parmJson3 (parm.flts);
+    Json parmJson4 (parm.ults);
+    Json parmJson5 (parm.llts);
+
+    //cout << "json" << parmKeyIntsJson 
+    parmJson1.insert(parmJson1.end(), parmJson2.begin(), parmJson2.end());
+    parmJson1.insert(parmJson1.end(), parmJson3.begin(), parmJson3.end());
+    parmJson1.insert(parmJson1.end(), parmJson4.begin(), parmJson4.end());
+    parmJson1.insert(parmJson1.end(), parmJson5.begin(), parmJson5.end());
+
+    Json parmJson = {"MapGapsParm", parmJson1};
+    of.open("parm.json");
+    of << parmJson1 << "\n";
+    of.close();
+    //}
+
+}
+
+//void 

@@ -144,8 +144,26 @@ struct PMRes
     StringSet<String<uint64_t> > hits;
 };
 
- uint64_t _nStrand(uint64_t strand);
- uint64_t _flipCoord (uint64_t coord, uint64_t len, uint64_t strand);
+uint64_t _nStrand(uint64_t strand);
+uint64_t _flipCoord (uint64_t coord, uint64_t len, uint64_t strand);
+
+struct ParmBase 
+{
+    typedef std::pair<std::string, int>   ParmKeyInts;
+    typedef std::pair<std::string, uint>  ParmKeyUits;
+    typedef std::pair<std::string, float> ParmKeyFlts;
+    typedef std::pair<std::string, int64_t>  ParmKeyLlts;
+    typedef std::pair<std::string, uint64_t> ParmKeyUlts;
+
+    std::vector<ParmKeyInts> ints;
+    std::vector<ParmKeyUits> uits;
+    std::vector<ParmKeyFlts> flts;
+    std::vector<ParmKeyLlts> llts;
+    std::vector<ParmKeyUlts> ults;
+
+    std::string name; 
+    std::vector<ParmBase *> nexts;
+};
 
 struct MapParm{
     unsigned    blockSize;

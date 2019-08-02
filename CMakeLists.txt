@@ -23,5 +23,6 @@ endif ()
 # ----------------------------------------------------------------------------
 
 include_directories(include)
+include_directories(extern_lib)
 add_subdirectory(src)
 
