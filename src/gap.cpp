@@ -638,11 +638,12 @@ void set_tiles_cords_sgns(String<uint64_t> & tiles, uint64_t sgn)
         {
             //TODO: k - getT(shape)
             //<<debug
-            g_hs_setGhs_(g_hs[g_hs_start + i++], val, type, shape.strand, k);
+            appendValue(g_hs, 0);
+            g_hs_setGhs_(back(g_hs), val, type, shape.strand, k);
             count = 0;
         }
     }
-    return g_hs_start + i;
+    return 0;
 }
 
 /**
@@ -979,7 +980,6 @@ unsigned _get_tile_f_tri_ (uint64_t & tile,
                    StringSet<FeaturesDynamic> & f2,
                    uint64_t gap_str,
                    uint64_t gap_end,
-                   int anchor_end, 
                    int revscomp_const,
                    int direction,
                    int const & thD_tile_size,
@@ -1006,12 +1006,12 @@ unsigned _get_tile_f_tri_ (uint64_t & tile,
     int64_t tmp_shift = block_size >> 1;
     int anchor_len = 0;
     int pre_tile_end = 0;
-    std::sort (begin(anchor), begin(anchor) + anchor_end);
-    anchor[anchor_end] = ~0;
+    std::sort (begin(anchor), end(anchor));
+    appendValue(anchor) = ~0;
     //g_print_tiles_(anchor, "stanchor");
 
     dout << "sv2anchorxx<<<<<<<<<<<<<<<<<<<<<<" << get_cord_y(gap_str) << "\n";
-    for (int k = 0; k < anchor_end + 1; k++)
+    for (int k = 0; k < length(anchor); k++)
     {
         //<<debug
         dout << "sv2anchorx" << g_hs_anchor_get_strand (anchor[k]) << g_hs_anchor_getY(anchor[k]) << g_hs_anchor_getX(anchor[k]) << "\n";
@@ -1344,8 +1344,6 @@ int map_g_anchor (String<uint64_t> & anchor,
 int map_interval(String<Dna5> & seq1, //genome
                  String<Dna5> & seq2, //read
                  String<Dna5> & comstr,
-                 String<uint64_t> & g_hs,
-                 String<uint64_t> & g_hs_anchor,
                  String<uint64_t> & g_hs_tile,    //results
                  StringSet<FeaturesDynamic > & f1,  
                  StringSet<FeaturesDynamic > & f2,
@@ -1363,8 +1361,6 @@ int map_interval(String<Dna5> & seq1, //genome
     {
         return 1;
     }
-    int g_hs_end = 0;
-    int g_hs_anchor_end = 0;
     print_cord(gap_str, "mi2>>>>>");
     print_cord(gap_end, "mi2>>>>");
     uint64_t rvcp_const = length(seq2) - 1;
@@ -1380,8 +1376,8 @@ int map_interval(String<Dna5> & seq1, //genome
         gr_end = rvcp_const - gr_end;
         std::swap (gr_end, gr_str);
     }
-    g_hs_end = g_mapHs_kmer_(seq1, g_hs, gs_str, gs_end, g_hs_end, 10, 0);
-    g_hs_end = g_mapHs_kmer_(seq2, g_hs, gr_str, gr_end, g_hs_end, 1, 1);
+    g_mapHs_kmer_(seq1, g_hs, gs_str, gs_end, 10, 0);
+    g_mapHs_kmer_(seq2, g_hs, gr_str, gr_end, 1, 1);
 
     std::sort (begin(g_hs), begin(g_hs) + g_hs_end);
     dout << "mi3" << g_hs_end << anchor_lower << anchor_upper << "\n";
@@ -1396,13 +1392,13 @@ int map_interval(String<Dna5> & seq1, //genome
                 p2 = k;
                 break;
             default:      //anchor current block before process next block 
-                g_hs_anchor_end = g_mapHs_setAnchors_(g_hs, g_hs_anchor, p1, p2, k, g_hs_anchor_end, rvcp_const, anchor_lower, anchor_upper);
+                g_mapHs_setAnchors_(g_hs, g_hs_anchor, p1, p2, k, rvcp_const, anchor_lower, anchor_upper);
                 p1 = k;
                 p2 = k; 
         }
     }
     //<<debug
-    for (int i = 0; i < g_hs_anchor_end; i++)
+    for (int i = 0; i < length(g_hs_anchor); i++)
     {
         dout << "mi2anchor" << g_hs_anchor_get_strand (g_hs_anchor[i]) << g_hs_anchor_getY(g_hs_anchor[i]) << g_hs_anchor_getX(g_hs_anchor[i]) << "\n";
     }
@@ -1410,7 +1406,6 @@ int map_interval(String<Dna5> & seq1, //genome
     g_print_tiles_(g_hs_tile, "mi20x");
     return map_g_anchor (g_hs_anchor, g_hs_tile, f1, f2, 
                          gap_str, gap_end,
-                         g_hs_anchor_end, 
                          rvcp_const,
                          direction,
                          thD_tile_size,
@@ -1518,8 +1513,6 @@ int try_tiles_dup(String<Dna5> & seq,
 int g_mapHs_(String<Dna5> & seq1, //genome
              String<Dna5> & seq2, //read
              String<Dna5> & comstr,
-             String<uint64_t> & g_hs,
-             String<uint64_t> & g_hs_anchor,
              String<uint64_t> & tiles,    //results
              StringSet<FeaturesDynamic > & f1,  
              StringSet<FeaturesDynamic > & f2,
@@ -1534,20 +1527,12 @@ int g_mapHs_(String<Dna5> & seq1, //genome
              MapGAnchorParm const & parm1
              )
 {
-    clear(g_hs);
-    clear(g_hs_anchor);
-    resize(g_hs, 1ULL << 20);
-    resize(g_hs_anchor, 1ULL << 20);
-
-    float thd_da_zero = thD_err_rate; 
-    map_interval(seq1, seq2, comstr, g_hs, g_hs_anchor, tiles, f1, f2, gap_str, gap_end, anchor_lower, anchor_upper, direction, thD_tile_size, thD_err_rate, parm1);
+    map_interval(seq1, seq2, comstr, tiles, f1, f2, gap_str, gap_end, anchor_lower, anchor_upper, direction, thD_tile_size, thD_err_rate, parm1);
 }
 
 int g_mapHs_(String<Dna5> & seq1, //genome
              String<Dna5> & seq2, //read
              String<Dna5> & comstr,
-             String<uint64_t> & g_hs,
-             String<uint64_t> & g_hs_anchor,
              String<uint64_t> & tiles,    //results
              StringSet<FeaturesDynamic > & f1,  
              StringSet<FeaturesDynamic > & f2,
@@ -1561,7 +1546,7 @@ int g_mapHs_(String<Dna5> & seq1, //genome
              )
 {
     g_mapHs_(seq1, seq2, comstr,
-             g_hs, g_hs_anchor, tiles, 
+             tiles, 
              f1, f2,
              gap_str,gap_end, 
              LLMIN,LLMAX,
@@ -2505,8 +2490,6 @@ int reform_tiles_(String<Dna5> & seq1,
                   String<uint64_t> & tiles_str,
                   String<uint64_t> & tiles_end,
                   String<uint64_t> & clips,
-                  String<uint64_t> & g_hs,
-                  String<uint64_t> & g_hs_anchor,
                   String<uint64_t> & sp_tiles, //record tiles id that needs additional process(dups).
                   int pos_str,
                   int pos_end,
@@ -2536,12 +2519,12 @@ int reform_tiles_(String<Dna5> & seq1,
     {
         if (direction == g_map_rght)
         {
-            reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[pos_str], tiles_end[pos_str], g_sv_r, thD_tile_size);
+            reform_tile_ (seq1, seq2, comstr, tiles_str[pos_str], tiles_end[pos_str], g_sv_r, thD_tile_size);
             return 0;
         }
         else if (direction = g_map_left)
         {
-            reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[pos_str], tiles_end[pos_str], g_sv_l, thD_tile_size);
+            reform_tile_ (seq1, seq2, comstr, tiles_str[pos_str], tiles_end[pos_str], g_sv_l, thD_tile_size);
             return 0;
         }
         else //== g_map_closed
@@ -2553,13 +2536,13 @@ int reform_tiles_(String<Dna5> & seq1,
     {
         if (direction == g_map_left)
         {
-            reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[pos_str], tiles_end[pos_str], g_sv_l, thD_tile_size);
+            reform_tile_ (seq1, seq2, comstr, tiles_str[pos_str], tiles_end[pos_str], g_sv_l, thD_tile_size);
         }
         for (int i = pos_str + 1; i < pos_end; i++)
         {
             if (i > 0 && is_tile_end (tiles_str[i - 1]) && direction == g_map_left)
             {
-                reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[i], tiles_end[i], g_sv_l, thD_tile_size);
+                reform_tile_ (seq1, seq2, comstr, tiles_str[i], tiles_end[i], g_sv_l, thD_tile_size);
                 continue;
             }
             int64_t dx = tile_distance_x(tiles_str[i - 1], tiles_str[i], uint64_t(length(seq2)));
@@ -2572,12 +2555,12 @@ int reform_tiles_(String<Dna5> & seq1,
                     insertClipEnd(sp_tiles, i);
                 }
 
-                reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[i - 1], tiles_end[i - 1], g_sv_r, thD_tile_size);
-                reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[i], tiles_end[i], g_sv_l, thD_tile_size);
+                reform_tile_ (seq1, seq2, comstr, tiles_str[i - 1], tiles_end[i - 1], g_sv_r, thD_tile_size);
+                reform_tile_ (seq1, seq2, comstr, tiles_str[i], tiles_end[i], g_sv_l, thD_tile_size);
             }
             if (direction == g_map_rght && is_tile_end(tiles_str[i]))
             {
-                reform_tile_ (seq1, seq2, comstr, g_hs, g_hs_anchor, tiles_str[i] , tiles_end[i], g_sv_r, thD_tile_size);
+                reform_tile_ (seq1, seq2, comstr, tiles_str[i] , tiles_end[i], g_sv_r, thD_tile_size);
             }
         }
         return 0;
@@ -2594,8 +2577,6 @@ int reform_tiles(String<Dna5> & seq1,
                  String<uint64_t> & tiles_str,
                  String<uint64_t> & tiles_end,
                  String<uint64_t> & clips,
-                 String<uint64_t> & g_hs,
-                 String<uint64_t> & g_hs_anchor,
                  String<uint64_t> & sp_tiles,
                  uint64_t gap_str,
                  uint64_t gap_end, 
@@ -2671,8 +2652,6 @@ int reform_tiles(String<Dna5> & seq1,
                 tiles_str_tmp,
                 tiles_end_tmp,
                 clips, 
-                g_hs, 
-                g_hs_anchor, 
                 sp_tiles,
                 0, length(tiles_str_tmp),
                 direction, 
@@ -2942,8 +2921,6 @@ int mapExtend_(StringSet<String<Dna5> > & seqs,
                uint64_t gap_end, 
                uint64_t anchor_lower,
                uint64_t anchor_upper,
-               String<uint64_t> & g_hs,
-               String<uint64_t> & g_anchor,
                StringSet<FeaturesDynamic > & f1,
                StringSet<FeaturesDynamic > & f2,
                String<uint64_t> & tiles_str,     //results
@@ -2964,8 +2941,7 @@ int mapExtend_(StringSet<String<Dna5> > & seqs,
     print_cord(gap_end, "mex");
     print_cord(anchor_lower, "mexa");
     print_cord(anchor_upper, "mexa");
-    g_mapHs_(ref, read, comstr,
-             g_hs, g_anchor, tiles_str, f1, f2,
+    g_mapHs_(ref, read, comstr,tiles_str, f1, f2,
              gap_str, gap_end, anchor_lower, anchor_upper,
              thd_da_zero, thD_tile_size, thd_dxy_min,
              g_map_rght, parm1
@@ -2988,8 +2964,6 @@ int mapGap_ (StringSet<String<Dna5> > & seqs,
              String<Dna5> & comstr,
              uint64_t gap_str, 
              uint64_t gap_end, 
-             String<uint64_t> & g_hs,
-             String<uint64_t> & g_anchor,
              StringSet<FeaturesDynamic > & f1,
              StringSet<FeaturesDynamic > & f2,
              String<uint64_t> & tiles_str,     //results
@@ -3048,7 +3022,6 @@ int mapGap_ (StringSet<String<Dna5> > & seqs,
         mapExtend_ (seqs, read, comstr, 
                     gap_str1, gap_end1, 
                     LLMIN, LLMAX,
-                    g_hs, g_anchor, 
                     f1, f2,  
                     tiles_str1, tiles_end1, clips1, 
                     direction1,
@@ -3062,7 +3035,6 @@ int mapGap_ (StringSet<String<Dna5> > & seqs,
         mapExtend_ (seqs, read, comstr, 
                     gap_str2, gap_end2, 
                     LLMIN, LLMAX,
-                    g_hs, g_anchor, 
                     f1, f2,  
                     tiles_str2, tiles_end2, clips2, 
                     direction2,
@@ -3095,8 +3067,8 @@ int mapGap_ (StringSet<String<Dna5> > & seqs,
     }
     else
     {
-        g_mapHs_(ref, read, comstr,
-                 g_hs, g_anchor, tiles_str, f1, f2,
+        g_mapHs_(ref, read, comstr, 
+                 tiles_str, f1, f2,
                  gap_str, gap_end,
                  thd_da_zero, thD_tile_size, thd_dxy_min,
                  direction,
@@ -3286,7 +3258,6 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
             dout << "mgleft1" << get_cord_y(gap_str) << get_cord_y(gap_end) << "\n";
                     mapGap_ (seqs, read, comstr, 
                              gap_str, gap_end, 
-                             g_hs, g_anchor, 
                              f1, f2,  
                              tiles_str, 
                              tiles_end,
@@ -3326,7 +3297,6 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                     mapExtend_ (seqs, read, comstr, 
                                 gap_str, gap_end, 
                                 anchor_lower, anchor_upper,
-                                g_hs, g_anchor, 
                                 f1, f2,  
                                 tiles_str, 
                                 tiles_end,
@@ -3361,7 +3331,6 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
             //>>debug
             mapGap_(seqs, read, comstr, 
                     gap_str, gap_end, 
-                    g_hs, g_anchor, 
                     f1, f2, 
                     tiles_str, 
                     tiles_end,
@@ -3405,7 +3374,6 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                 {
                     mapGap_ (seqs, read, comstr, 
                              gap_str, gap_end, 
-                             g_hs, g_anchor, 
                              f1, f2,  
                              tiles_str, 
                              tiles_end, 
@@ -3444,7 +3412,6 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
                     mapExtend_ (seqs, read, comstr, 
                                 gap_str, gap_end, 
                                 anchor_lower, anchor_upper,
-                                g_hs, g_anchor, 
                                 f1, f2,  
                                 tiles_str, 
                                 tiles_end,
