@@ -1,4 +1,5 @@
 #include <utility> 
+#include <chrono>
 //#include "base.h"
 #include "cords.h" 
 #include "align_util.h"
@@ -576,9 +577,11 @@ int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     }
     else
     {
-        double time = sysTime();
+        auto t1 = std::chrono::high_resolution_clock::now();
         score = globalAlignment (row1, row2, scheme, AlignConfig<true, true, true, true>(), -band, band);
-        std::cout << "atime " << sysTime() - time << "\n";
+        auto t2 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+        std::cout << "atime " << duration << "\n";
     }
     return score;
 }
