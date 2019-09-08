@@ -5,6 +5,9 @@
 
 using namespace seqan;
 
+int calEditDistance(String<Dna5> & seq1, String<Dna5> & seq2, String<Dna5> &compstr,  
+                    uint64_t cord_str, uint64_t cord_end);
+
 class BamAlignmentRecordLink : public BamAlignmentRecord 
 { 
 public:

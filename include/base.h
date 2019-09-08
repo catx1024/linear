@@ -30,6 +30,10 @@ struct Options{
     PathType oPath;
     PathsType r_paths;
     PathsType g_paths;
+
+    const uint m_csm = 1; //tiny sam moudle
+    
+    uint module;
     
     uint gap_len; //0 to turn off gap mapping module, set > 0 to map gaps whose length > this value
     uint apx_chain_flag;

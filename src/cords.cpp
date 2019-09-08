@@ -244,10 +244,10 @@ void print_cords(String<uint64_t> & cords, CharString header)
     for (uint i = 1; i < length(cords); i++)
     {
         std::cout << header << " " 
-                  << get_cord_y (cords[i]) << " "  
-                  << get_cord_x(cords[i]) << " "
-                  << get_cord_strand(cords[i]) << " "
-                  << get_cord_id(cords[i]) << " "
+                  << get_cord_y (cords[i])       << " "  
+                  << get_cord_x(cords[i])        << " "
+                  << get_cord_strand(cords[i])   << " "
+                  << get_cord_id(cords[i])       << " "
                   << is_cord_block_end(cords[i]) << "\n";
         if (is_cord_block_end(cords[i]))
         {
@@ -264,9 +264,9 @@ int isCordsConsecutive_(uint64_t & cord1, uint64_t cord2, uint64_t thd_cord_gap)
     uint64_t y2 = get_cord_y (cord2);
 
     int f = !get_cord_strand(cord1 ^ cord2) &&
-           x1 < x2 && y1 < y2 &&
-           x2 - x1 < thd_cord_gap &&
-           y2 - y1 < thd_cord_gap;
+             x1 < x2 && y1 < y2             &&
+             x2 - x1 < thd_cord_gap         &&
+             y2 - y1 < thd_cord_gap;
 
     return f;
 }

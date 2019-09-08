@@ -67,20 +67,50 @@ int main(int argc, char const ** argv)
     seqan::ArgumentParser::ParseResult res = parseCommandLine(options, argc, argv);
     if (res != seqan::ArgumentParser::PARSE_OK)
         return res == seqan::ArgumentParser::PARSE_ERROR;
-    Mapper mapper(options);
-    uint thd_g_size = 300 << 20; //300M bases 
-    /*
-    if (lengthSum(mapper.getGenomes ()) > thd_g_size)
+    if (options.module == options.m_csm)
     {
-        process2 (mapper, options, p1);
+        std::ofstream sam_file_out("convert.sam");
+        std::cerr << "call m_csm\n";
+        String<BamAlignmentRecord> records1; //original
+        String<BamAlignmentRecord> records2; //converted
+        BamFileIn bamFileIn;
+        for (auto & path : options.r_paths)
+        {
+            open(bamFileIn, toCString(path));
+            BamFileOut bamFileOut(context(bamFileIn), std::cout, Sam());
+            std::cerr << "ssamlen " << length(records1) << "\n";
+            BamHeader header;
+            readHeader(header, bamFileIn);
+            writeHeader(bamFileOut, header);
+            BamAlignmentRecord record;
+            while(!atEnd(bamFileIn)) 
+            {
+                readRecord(record, bamFileIn);
+                //convertCigarM(ref, read, bamRe, cigar2) 
+                writeRecord(bamFileOut, record);
+            }
+            clear(records1);
+            clear(records2);
+        }
     }
     else
     {
-        */
-    int p1 = 0;
-        process1 (mapper, options, p1);
-    //}
-    //process2 (options, options.p1);
+        Mapper mapper(options);
+        uint thd_g_size = 300 << 20; //300M bases 
+        /*
+        if (lengthSum(mapper.getGenomes ()) > thd_g_size)
+        {
+            process2 (mapper, options, p1);
+        }
+        else
+        {
+            */
+        int p1 = 0;
+            process1 (mapper, options, p1);
+        //}
+        //process2 (options, options.p1);
+        dout << "timep1\n";
+    }
     std::cerr << "Time in sum[s] " << sysTime() - time << "      \n";
     return 0;
 }

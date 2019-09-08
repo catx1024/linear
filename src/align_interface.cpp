@@ -568,6 +568,10 @@ int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                )
 {
     cord2row_ (row1, row2, genome, read, comrevRead, cord_start, cord_end);
+    //<<debug
+    Row<Align<String<Dna5>, ArrayGaps> >::Type row3 = row1;
+    Row<Align<String<Dna5>, ArrayGaps> >::Type row4 = row2;
+    //>>debug
     int score = 0;
     if (!local_flag)
     {
@@ -577,7 +581,13 @@ int align_cord (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     {
         double time = sysTime();
         score = globalAlignment (row1, row2, scheme, AlignConfig<true, true, true, true>(), -band, band);
-        std::cout << "atime " << sysTime() - time << "\n";
+        std::cout << "atime1 " << sysTime() - time << "\n";
+        //<<debug
+        time = sysTime();
+        //score = globalAlignment (row3, row4, scheme, AlignConfig<true, true, true, true>(), -band, band);
+        score = globalAlignmentScore (source(row1), source(row2), MyersBitVector());
+        std::cout << "atime2 " << sysTime() - time << score << "\n";
+        //>>debug
     }
     return score;
 }
@@ -990,7 +1000,7 @@ void printCigarSrcLen(String<BamAlignmentRecordLink> & records, CharString heade
 {
     for (int i = 0; i < length(records); i++)
     {
-        std::pair <int, int > lens = countCigar (records[i].cigar);
+        std::pair <int, int > lens = countCigar (begin(records[i].cigar), end(records[i].cigar));
         std::cout << header << " " << i << " " << length(records) << " " << lens.first << " " << lens.second << "\n";
     }
     std::cout << header << "\n";

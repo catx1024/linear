@@ -212,6 +212,37 @@ std::string getFileName(std::string s, std::string delimiter, uint count)
     return s;
 }
 
+int readSam(String<BamAlignmentRecord> & records,
+            std::string bamFileName)
+{
+    BamFileIn bamFileIn;
+    if (!open(bamFileIn, toCString(bamFileName)))
+    {
+        std::cerr << "ERROR: Could not open " << bamFileName << std::endl;
+        return 1;
+    }
+    // Open output file, BamFileOut accepts also an ostream and a format tag.
+    //BamFileOut bamFileOut(context(bamFileIn), std::cout, Sam());
+    try
+    {
+        // Read header.
+        BamHeader header;
+        readHeader(header, bamFileIn);
+
+        // Read records.
+        while (!atEnd(bamFileIn))
+        {
+            BamAlignmentRecordLink record;
+            readRecord(record, bamFileIn);
+            appendValue(records, record);
+        }
+    }
+    catch (Exception const & e)
+    {
+        std::cerr << "ERROR: " << e.what() << std::endl;
+        return 1;
+    }
+}
 
 //Lightweight sam function of Seqan::write(bamAlignmentRecord)
 void writeSam(std::ofstream & target,
@@ -387,7 +418,6 @@ int writeSam(std::ofstream & target,
 
     writeValue(target, '\t');
 
-
     if (empty(record.qual))  // Case of empty quality string / "*".
         writeValue(target, '*');
     else
@@ -403,34 +433,44 @@ int writeSam(std::ofstream & target,
     return it_count;
 }
 
-std::pair<int, int> countCigar(String<CigarElement<> > & cigar)
+//Iterator one cigar record given by the @it in the cigar string to 
+//update the corresponding ref and read @lens.
+//@lens.first: lens of ref; @.second: ..read
+void iterateCigar(CigarStringIterator it, std::pair<int, int> & lens)
 {
-    int len1 = 0, len2 = 0;
-    for (int i = 0; i < length(cigar); i++)
+   switch (it->operation)
+   {
+        case 'D':
+            lens.first  += it->count;
+            break;
+        case 'I':
+            lens.second += it->count;
+            break;
+        case '=':
+            lens.first  += it->count;
+            lens.second += it->count;
+           break;
+        case 'X':
+            lens.first  += it->count;
+            lens.second += it->count;
+           break;
+        case 'S':
+            lens.second += it->count;
+        case 'H':
+            lens.second += it->count; //TODO::??make sure hard clip
+        default:
+            break;  
+   }    
+}
+
+std::pair<int, int> countCigar(CigarStringIterator it_str, CigarStringIterator it_end)
+{
+    std::pair<int, int> lens(0, 0);
+    for (CigarStringIterator it = it_str; it < it_end; it++)
     {
-        //std::cerr << cigar[i].operation << cigar[i].count << " ";
-        switch (cigar[i].operation)
-        {
-            case 'D':
-                len1 += cigar[i].count;
-                break;
-            case 'I':
-                len2 += cigar[i].count;
-                break;
-            case '=':
-                len1 += cigar[i].count;
-                len2 += cigar[i].count;
-                break;
-            case 'X':
-                len1 += cigar[i].count;
-                len2 += cigar[i].count;
-                break;
-            default:
-                break;  
-        }
+        iterateCigar(it, lens) ;
     }
-    //std::cerr << "\n";
-    return std::pair<int,int>(len1, len2);
+    return lens;
 }
 
 void printRows(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
@@ -547,17 +587,12 @@ int print_align_sam (StringSet<String<Dna5> > & genms,
                      std::ofstream & of
                      )
 {
-    print_align_sam_header_(genmsId, 
-                            genms,
-                            of);
-    print_align_sam_record_(bam_records,
-                            genmsId,
-                            readsId,
-                            of); 
+    print_align_sam_header_(genmsId, genms, of);
+    print_align_sam_record_(bam_records, genmsId, readsId, of); 
     return 0;
 }
 
-/*----------  Convert Cords to Bam  ----------*/
+/*---------- Section to convert Bam from Cords  ----------*/
 
 /*
  *shortcut to append cigar
@@ -570,8 +605,8 @@ void appendCigar(String<CigarElement< > > & cigars, CigarElement<> cigar)
 {
     appendCigar(cigars, cigar.operation, cigar.count);
 }
-/*
- * If necessary to create new bam record given the @cords
+/**
+ * If necessary to create new bam record given 2 pairs of @cord_str and @cord_end
  */
 int ifCreateNew_(uint64_t cord1_str, uint64_t cord1_end, uint64_t cord2_str, uint64_t cord2_end, uint64_t thd_large_X)
 {
@@ -582,12 +617,12 @@ int ifCreateNew_(uint64_t cord1_str, uint64_t cord1_end, uint64_t cord2_str, uin
     uint64_t x21 = get_cord_x(cord2_str);
     uint64_t y21 = get_cord_y(cord2_str);
     (void) cord2_end;
-    int flag = is_cord_block_end (cord1_str) ||  
-                             (x11 > x21) || 
-                             (y11 > y21) ||
-                (x12 > x21 && y12 < y21) ||
+    int flag = is_cord_block_end (cord1_str) || 
+                (x11 > x21) ||  (y11 > y21)  ||
+                (x12 > x21 && y12 < y21) || 
                 (x12 < x21 && y12 > x21) ||
-                (int64_t(x21 - x12) > int64_t(thd_large_X) && int64_t(y21 - y12) > int64_t(thd_large_X)) ||
+                (int64_t(x21 - x12) > int64_t(thd_large_X) && 
+                 int64_t(y21 - y12) > int64_t(thd_large_X)) ||
                 get_cord_strand (cord1_str ^ cord2_str);
     return flag;
 }
@@ -618,7 +653,7 @@ void createRectangleCigarPair (uint64_t cord1, uint64_t cord2,
 }
 
 /*
- * NOTE::@cords are required to meet the conditons declared at function of ifCreateNew_()
+ * NOTE::@cords are required to meet the conditons declared in the function ifCreateNew_()
  */
 uint64_t cord2cigar_ (uint64_t cigar_str, //coordinates where the first cigar starts 
                       uint64_t cord1_str, 
@@ -672,12 +707,11 @@ uint64_t cord2cigar_ (uint64_t cigar_str, //coordinates where the first cigar st
     return next_cigar_str;
 }
 
-/*
- *  Function to convert cords to bam
+/*  Function to convert cords to bam
  *  WARN::The @cords_str[0] and back(@cords_str) are required to have block end sign
-    Otherwise will cause seg fault. 
- *  NOTE::addjacent cords, cord1 and cord2, will be break into different bams if cord1y > cord2y || cord1x >
-    cord2x
+    Otherwise can lead to seg fault. 
+ *  NOTE::addjacent cords, cord1 and cord2, will be break into different bams if 
+    cord1y > cord2y || cord1x > cord2x
  */
 void cords2BamLink(String<uint64_t> & cords_str, 
                    String<uint64_t> & cords_end,
@@ -727,7 +761,7 @@ void cords2BamLink(String<uint64_t> & cords_str,
         }
     }
 }
-
+//cords2BamLink StringSet wrapper
 void cords2BamLink(StringSet<String<uint64_t> > & cords_str, 
                    StringSet<String<uint64_t> > & cords_end,
                    StringSet<String<BamAlignmentRecordLink> > & bam_link_records,
@@ -755,8 +789,10 @@ void cords2BamLink(StringSet<String<uint64_t> > & cords_str,
         }
     }
 }
-/*
- * num of operation 'X' > @thd_large_X will be clipped to new bam records
+/* Function to print sam records from the cords
+ * Conditons of clipping cords to seperate bam records
+ * 1.Larg gap: if the num of operation 'X' > @thd_large_X will be clipped to new bam records
+ * 2.Not Monotone Increasing cords: will be clipped to new records.
  */
 void print_cords_sam
     (StringSet<String<uint64_t> > & cordset_str,    
@@ -772,3 +808,49 @@ void print_cords_sam
     cords2BamLink (cordset_str, cordset_end, bam_records, thd_cord_size, thd_large_X);
     print_align_sam (genms, genmsId, readsId, bam_records, of);
 }   
+
+//utile function to covert 'M' in cigar to 'X' and '='
+int convertCigarM(String<Dna5> & ref, String<Dna5> & read, 
+                  String<CigarElement<> > & cigar1,  //original cigar
+                  String<CigarElement<> > & cigar2,  //result, cigar converted
+                  uint64_t cord_str)
+{
+    std::pair<int, int> lens(0, 0);
+    for (int i = 0; i < length(cigar1); i++)
+    {
+        if (cigar1[i].operation != 'M')
+        {
+            iterateCigar(begin(cigar1) + i, lens);
+            appendValue(cigar2, cigar1[i]);
+        }
+        else
+        {
+            int ct = 0;
+            int f1 = 0, f2 = 0;
+            char op;
+            Iterator<String<Dna5> >::Type it1;
+            Iterator<String<Dna5> >::Type it2 = begin(read) + lens.second;
+            it1 = begin(ref)  + get_cord_x(cord_str) + lens.first;
+            it2 = begin(read) + get_cord_y(cord_str) + lens.second;
+            for (int j = 1; j < cigar1[i].count; j++)
+            {
+                f1 = (*(it1 + j - 1) == *(it2 + j - 1)) ? 1 : 0;
+                f2 = (*(it1 + j) == *(it2 + j)) ? 1 : 0;
+                op = (*(it1 + j - 1) == *(it2 + j - 1)) ? '=' : 'X';
+                ct++;
+                if (f1 != f2)
+                {
+                    appendValue(cigar2, CigarElement<>(ct, op));
+                }
+                else
+                {
+                    ct = 0;
+                }
+            }
+            op = (*(it1 + cigar1[i].count - 1) == *(it2 + cigar1[i].count - 1)) ? '=' : 'X';
+            appendValue(cigar2, CigarElement<>(++ct, op));
+        }
+    }
+    return 0;  
+}
+

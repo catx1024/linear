@@ -144,29 +144,37 @@ parseCommandLine(Options & options, int argc, char const ** argv)
     //std::cerr << "xxxxx " << options.gap_len << isSet(parser, "gap_len") << "\n";
     std::vector<std::string> args;
     args = getArgumentValues(parser, 0);
-    if (length(args) < 2)
+    if (args[0] == "M_csm") //call convert sam moudle : a tiny util module
     {
-        std::cerr << "[Err]::At least two argments required to specify the reads and genomes \n";
-        return seqan::ArgumentParser::PARSE_ERROR;
+        appendValue(options.r_paths, args[1]);
+        options.module = options.m_csm;
     }
-    else if (length(args) == 2)
+    else //call align module
     {
-        //appendValue(options.rPath, args[0]);
-        appendValue (options.r_paths, args[0]);
-        appendValue (options.g_paths, args[1]);
-    }
-    else
-    {
-        Options::PathsType * pp = & options.r_paths;
-        for (size_t i = 0; i < length(args); i++)
+        if (length(args) < 2)
         {
-            if (args[i] == CARTESIAN)
+            std::cerr << "[Err]::At least two argments to specify the reads and genomes \n";
+            return seqan::ArgumentParser::PARSE_ERROR;
+        }
+        else if (length(args) == 2)
+        {
+            //appendValue(options.rPath, args[0]);
+            appendValue (options.r_paths, args[0]);
+            appendValue (options.g_paths, args[1]);
+        }
+        else
+        {
+            Options::PathsType * pp = & options.r_paths;
+            for (size_t i = 0; i < length(args); i++)
             {
-                pp = & options.g_paths;
-            }
-            else
-            {
-                appendValue (*pp, args[i]);
+                if (args[i] == CARTESIAN)
+                {
+                    pp = & options.g_paths;
+                }
+                else
+                {
+                    appendValue (*pp, args[i]);
+                }
             }
         }
     }

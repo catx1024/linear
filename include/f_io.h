@@ -7,6 +7,8 @@
 using namespace seqan;
 using std::ofstream;
 
+typedef Iterator<String<CigarElement<> > >::Type CigarStringIterator;
+
 void print_cords_paf(CordsSetType & cords, 
                      StringSet<String<Dna5> > & genomes,
                      StringSet<String<Dna5> > & reads,
@@ -27,6 +29,9 @@ std::string & operator<< (std::string & s, std::string s2);
 
 std::string getFileName(std::string, std::string sep = "/", uint flag = ~0);
 
+int readSam(String<BamAlignmentRecord> & records,
+            std::string bamFileName);
+
 void writeSam(std::ofstream & target,
               BamAlignmentRecord const & record,
               CharString genome_id,
@@ -40,7 +45,8 @@ int writeSam(std::ofstream & target,
              );
 int clip_cigar (String<CigarElement<> > & cigar);
 
-std::pair<int, int> countCigar(String<CigarElement<> > & cigar);
+std::pair<int, int> countCigar(CigarStringIterator it_str, CigarStringIterator it_end);
+
 void printRows(Row<Align<String<Dna5>,ArrayGaps> >::Type & row1,
                Row<Align<String<Dna5>,ArrayGaps> >::Type & row2,
                CharString header = ""
@@ -103,6 +109,12 @@ void print_cords_sam (StringSet<String<uint64_t> > & cordset_str,
                       StringSet<String<Dna5> > & genms,
                       int thd_cord_size,
                       std::ofstream & of,
-                      uint64_t thd_large_X
-                      );
+                      uint64_t thd_large_X);
+
+//utile function to covert 'M' in cigar to 'X' and '='
+int convertCigarM(String<Dna5> & ref, String<Dna5> & read, 
+                  String<CigarElement<> > & cigar1,  //original cigar
+                  String<CigarElement<> > & cigar2,  //result, cigar converted
+                  uint64_t cord_str);
+
 #endif

@@ -889,7 +889,9 @@ uint64_t previousWindow(FeaturesDynamic & f1, //read
     unsigned min = ~0;
     for (uint64_t x = x_suf - parm->sup; x < x_suf - parm->inf; x += 1) 
     {
+        double time = sysTime();
         unsigned tmp = __windowDist(f1, f2, y, x);
+        dout << "syst" << sysTime() - time << "\n";
         if (tmp < min)
         {
             min = tmp;

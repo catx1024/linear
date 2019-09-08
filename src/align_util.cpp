@@ -5,6 +5,23 @@ uint16_t bam_flag_rvcmp = 16;
 uint16_t bam_flag_rvcmp_nxt = 32;
 uint16_t bam_flag_suppl = 2048;
 
+int calEditDistance(String<Dna5> & seq1, String<Dna5> & seq2, String<Dna5> & compstr,
+                    uint64_t cord_str, uint64_t cord_end)
+{
+    String<Dna5>  infix1;  
+    String<Dna5>  infix2;  
+
+    infix1 = infix(seq1, get_cord_x(cord_str), get_cord_x(cord_end));   
+    infix2 = get_cord_strand(cord_str) ? infix(compstr, get_cord_y(cord_str), get_cord_y(cord_end)) :
+                                         infix(seq2, get_cord_y(cord_str), get_cord_y(cord_end));
+    std::cout << "dist" << get_cord_y(cord_str) << " " << get_cord_y(cord_end) << " " << get_cord_x(cord_str) << " " << get_cord_x(cord_end) << "\n";
+    int score = globalAlignmentScore(infix1, infix2, MyersBitVector());
+    //Score<int, Simple> scheme(1,-1,-1);
+    //int score = globalAlignmentScore(infix1, infix2, scheme, AlignConfig<true, true, true, true>(), -50, 50);
+
+    return score;
+}
+
 BamAlignmentRecordLink::BamAlignmentRecordLink()
 {
     next_id = -1;
@@ -42,8 +59,7 @@ int BamAlignmentRecordLink::next() const
 void align2cigar_(String<CigarElement< > > &cigar,
         Row<Align<String<Dna5>,ArrayGaps> >::Type &gaps1,
         Row<Align<String<Dna5>,ArrayGaps> >::Type &gaps2,
-        unsigned splicedGapThresh
-        )
+        unsigned splicedGapThresh)
 {
     typedef Row<Align<String<Dna5>,ArrayGaps> >::Type TRow;
     typename Iterator<TRow>::Type it1 = begin(gaps1);
