@@ -526,6 +526,191 @@ int map_(IndexDynamic & index,
     return 0;
 }
 
+//Simple model of tasks and buffers
+//Buffers: only input from from one task allowed, multiple outputs 
+//tasks: multiple buffers out and in
+//Example:          
+//       [B0]--(t1)
+//            /
+// (t0)--[B1]--(t2)--[B2]
+//                  \
+//                   [B3]
+
+struct SimpleBuffer
+{
+    int p_str; // [p_str, p_end) % buffer_size is the available region
+    int p_end;
+    int buffer_size;
+    int n_out; //number of ouputs
+    uint64_t status;
+    uint64_t resetStatus()
+    {
+        status = (1ULL << n_out) - 1;
+        return status_in;
+    }
+    uint64_t unsetStatus(int i)
+    {
+        status &= ~(1ULL << i);
+        return status_in;
+    }
+    void free(int val)
+    {
+        p_str += val;
+        p_str %= buffer_size;
+    }
+    void unfree(int)
+    {
+        p_end += val;
+        p_end %= buffer_size;
+    }
+    void registerOut(int tid){(void)tid; n_out++}
+    void registerIn (int tid){(void)tid;}
+
+    SimpleBuffer(buf_size) :
+        p_str(0), p_end(0), buffer_size(buf_size), n_out(0)
+    {}
+}
+
+struct SimpleTasks
+{
+    StringSet<String<int> > buffers_in;  //this.[i][j]:pointers to jth buffers_in of ith task 
+    StringSet<String<int> > buffers_out; 
+    String<SimpleBuffer>   buffers;      //all abailable buffers
+
+    void updateBuffersIn (int tid);
+    void updateBuffersOut(int tid);
+    void registerBufferIn (int, int);
+    void registerBufferOut (int, int);
+    int addBuffers(int buf_size);        //return the new buffer id
+    int addTask();                       //return the new task   id
+
+}
+void SimpleTasks::registerBufferIn(int i, int j)
+{
+    buffers_in[i] = j;
+    buffers[buffers_in[i]].registerOut(j);
+}
+void SimpleTasks::registerBufferOut(int i, int j)
+{
+    buffers_out[i] = j;
+    buffers[buffers_out[i]].registerIn(j);
+}
+void SimpleTasks::updateBuffersIn(int tid, int val) //update alld buffers of task @tid
+{
+    for (int i = 0; i < length(tasksIn[tid]); i++)
+    {
+        if (buffers[tasksIn[i]].unsetStatus(i) == 0) 
+        {
+            buffers[tasksIn[i]].free(val);
+        }
+    }
+}
+void SimpleTasks::updateBuffersOut(int tid, int val) //update alld buffers of task @tid
+{
+    buffers[tasksOut[i]].resetStatus() 
+    buffers[tasksOut[i]].unfree(val);
+}
+int SimpleTasks::addBuffers(int buf_size); 
+{
+    appendValue (buffers, SimpleBuffer(buf_size));
+    return length(buffers);
+}
+int SimpleTasks::addTask()
+{
+    appendValue(buffers_in  String<int>());
+    appendValue(buffers_out String<int>());
+    return length(buffers_in)
+}
+
+int readRecordsBuffer(StringSet<CharString> & read_ids, StringSet<String<Dna5> > & reads, 
+    SeqFileIn & fin, int expect_size, SimpleBuffer & buffer);
+{
+    int real_size = 0;
+    int pos = buffer.initPos();
+    for (int i = 0; i < std::min(buffer.getAvailableSize(), expect_size) && !atEnd(fin); i++)
+    {
+        pos = getNextPos();
+        readRecord (read_ids[pos], reads[pos], fin);
+        ++real_size;
+    }
+    return real_size
+}
+
+int map2(Mapper & mapper, 
+        StringSet<FeaturesDynamic> & f2, 
+        StringSet<String<short> > & buckets, 
+        String<Position<SeqFileIn>::Type> & fin_pos,
+        int gid, 
+        int f_buckets_enabled,
+        int p1,
+        bool f_io_append)
+{
+    SimpleTasks tasks;
+    int reads_buf_size = 50000;
+    int cords_buf_size = 50000; 
+    int samls_buf_size = 50000;
+    int reads_buf_id = tasks.addBuffers(reads_buf_size); //read records buffer
+    int cords_buf_id = tasks.addBuffers(cords_buf_size); //cords buffer
+    int samls_buf_id = tasks.addBuffers(samls_buf_size); //bam records buffer
+    int ins_task_id  = tasks.addTask(); //read reads task
+    int map_task_id  = tasks.addTask(); //map task
+    int out_task_id  = tasks.addTask(); //write result task
+
+    tasks.registerBufferOut (ins_task_id, reads_buf_id);
+    tasks.registerBufferOut (map_task_id, cords_buf_id);
+    tasks.registerBufferOut (map_task_id, samls_buf_id);
+    tasks.registerBufferIn  (map_task_id, reads_buf_id);
+    tasks.registerBufferIn  (out_task_id, cords_buf_id);
+    tasks.registerBufferIn  (out_task_id, samls_buf_id);
+
+    SeqFileIn rFile;
+
+    omp_set_nested(1);
+    int ins_update_size = 25000;
+    int map_update_size = 25000;
+    int out_update_size = 25000;
+    bool f_ins_done = false;
+    bool f_map_done = false;
+    bool f_out_done = false;
+#pragma omp parallel sections number_threads(3)
+{
+    #pragma omp section
+    {
+        while (!atEnd(rFile))
+        {
+            int real_new_size = readRecordsBuffer (mapper.getReadsId(), mapper.getReads(), rFile, 
+                                               ins_update_size, tasks.getBuffer[reads_buf_id]);
+            tasks.updateBuffersOut(ins_task_id, real_new_size);
+        }
+        while (!tasks.getBuffer(reads_buf_id).isEmpty())
+        {}
+        f_ins_done = true; //this value must be set here, at the end of the section
+    }
+    #pragma omp section
+    {
+        int f_buf_empty = true; //if ins buf(read records) is empty: 
+        while (!f_ins_done || !f_buf_empty)
+        {
+            if (!f_buf_empty)
+            {
+                int real_new_size = mapRecordBuffer (map_update_size);
+                tasks.updateBuffersOut(map_task_id, real_new_size);
+                tasks.updateBuffersIn (map_task_id, real_new_size);
+            }
+            f_buf_empty = !tasks.getBuffer(reads_buf_id).isEmpty();
+        }
+    }
+    #pragma omp section
+    {
+        int real_new_size = writeRecordBuffer (out_update_size);
+        tasks.updateBuffersOut(out_task_id, real_new_size);
+        tasks.updateBuffersIn (out_task_id, real_new_size);
+    }
+}
+
+}
+
+
 /**
  * Map main 
  * Stream all reads records in reads files specified by @path 
@@ -541,9 +726,12 @@ int map(Mapper & mapper,
         int p1,
         bool f_io_append)
 {
+    omp_set_nested(1);
+
     //std::cout << "mapf " << mapper.getFeatureType() << "\n";
     unsigned blockSize = 50000;
     uint rstr = 0;
+    double time1, time2, time3;
     SeqFileIn rFile;
     StringSet<std::string> file1s;
     StringSet<std::string> file2s;
@@ -567,9 +755,14 @@ int map(Mapper & mapper,
         unsigned k = 1;
         while (!atEnd(rFile))
         {
-            double time1 = sysTime();
+#pragma omp parallel sections number_threads(2)
+{
+    #pragma omp section
+    {
+            time1 = sysTime();
             serr.print_message("=>Map::file_I/O", 0, 0, std::cerr);
             serr.print_message(k, 0, 2, std::cerr);
+
             try
             {
                 if (f_buckets_enabled)
@@ -588,6 +781,10 @@ int map(Mapper & mapper,
             {
 
             }
+            time1 = sysTime() - time1;
+    }
+    #pragma omp section
+    {
             //serr.print_message("", 50, 2, std::cerr); 
             serr.print_message("=>Map::mapping ", 0, 0, std::cerr);
             serr.print_message(path, 0, 0, std::cerr);
@@ -595,8 +792,7 @@ int map(Mapper & mapper,
             serr.print_message(k, 0, 0, std::cerr);
             serr.print_message(" Size ", 0, 0, std::cerr);
             serr.print_message(unsigned(length(mapper.getReads())), 0, 2, std::cerr);
-            time1 = sysTime() - time1;
-            double time2 = sysTime();
+            time2 = sysTime();
             map_(mapper.getIndex(), 
                  f2, 
                  mapper.getReads(), 
@@ -611,11 +807,11 @@ int map(Mapper & mapper,
                  mapper.getThreads(), 
                  p1);
             time2 = sysTime() - time2;
-            double time3 = sysTime();
+    }
+}
+            time3 = sysTime();
             serr.print_message("=>Write results to disk", 0, 2, std::cerr);
-
             print_mapper_results(mapper);
-
             clear (mapper.getCords());
             clear (mapper.getCords2());
             clear (mapper.getClips());
@@ -627,7 +823,6 @@ int map(Mapper & mapper,
             time3 = sysTime() - time3;
             std::cerr <<  "--Map::file " << path << " block "<< k << " Size " << length(mapper.getReads()) << " Elapsed Time[s]: file_I/O " << time1 + time3 << " map "<< time2 << "\n";
             k++;
-        }      
         std::string file1 = mapper.getOutputPrefix() + ".apf";
         std::string file2 = mapper.getOutputPrefix() + ".gvf";
         std::string file3 = mapper.getOutputPrefix() + ".sam";
