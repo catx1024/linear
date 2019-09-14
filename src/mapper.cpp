@@ -526,6 +526,7 @@ int map_(IndexDynamic & index,
     return 0;
 }
 
+
 //Simple model of tasks and buffers
 //Buffers: only input from from one task allowed, multiple outputs 
 //tasks: multiple buffers out and in
@@ -634,6 +635,36 @@ int readRecordsBuffer(StringSet<CharString> & read_ids, StringSet<String<Dna5> >
         ++real_size;
     }
     return real_size
+}
+
+int getTask()
+{
+
+}
+
+#pragma
+{
+    while ()
+    {
+        task_type = getTask()
+        if ()
+        {
+
+        }
+        else if ()
+        {
+
+        }
+        else if ()
+        {
+
+        }
+        else //wait empty
+        {
+
+        }
+        if (ge) 
+    }
 }
 
 int map2(Mapper & mapper, 
