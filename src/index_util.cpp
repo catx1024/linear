@@ -715,12 +715,12 @@ bool HIndex::insertYsaSortedRecord(uint64_t g_str, uint64_t g_end)
  * state::warnning. for seq contains 'N', error. since the k in openmp doesn't change correctly
  */
  uint64_t __createHsArray(StringSet<String<Dna5> > & seq, 
-                     String<uint64_t> & hs, 
-                     LShape & shape, 
-                     unsigned gstr,
-                     unsigned gend,
-                     unsigned threads,
-                     unsigned thd_step)
+                          String<uint64_t> & hs, 
+                          LShape & shape, 
+                          unsigned gstr,
+                          unsigned gend,
+                          unsigned threads,
+                          unsigned thd_step)
 {
     uint64_t hsRealEnd = 0;
     resize (hs, lengthSum(seq) * 2 / thd_step + 1000);
@@ -758,11 +758,9 @@ bool HIndex::insertYsaSortedRecord(uint64_t g_str, uint64_t g_end)
             }
  
             hashInit(tshape, begin(seq[j]) + start);
-            //dout << "start" << start << seqChunkSize[thd_id] << "\n";
             for (uint64_t k = start; k < start + seqChunkSize[thd_id]; k++)
             {
-                //std::cerr << k << "\n";
-                if(ordValue(*(begin(seq[j]) + k + tshape.span - 1)) == 4)
+                if(ordValue(*(begin(seq[j]) + k + tshape.span - 1)) == 4) //skip "N"
                 {
                     k += hashInit(tshape, begin(seq[j]) + k);
 
@@ -771,9 +769,10 @@ bool HIndex::insertYsaSortedRecord(uint64_t g_str, uint64_t g_end)
                         k = seqChunkSize[thd_id] - (seqChunkSize[thd_id] + start) % thd_step + thd_step + start;
                     }
                 }
-                hashNext(tshape, begin(seq[j]) + k);
+                hashNexth(tshape, begin(seq[j]) + k);
                 if (k % thd_step == 0)
                 {
+                    hashNextX(tshape, begin(seq[j]) + k);
                     if (tshape.XValue ^ preX)
                     {
                         _DefaultHs.setHsHead(hs[hsStart + thd_count - ptr], ptr, preX);
@@ -831,7 +830,8 @@ bool _createHsArray(StringSet<String<Dna5> > & seq,
         clear(seq);
         shrinkToFit(seq);   
     }
-    std::cerr << "--Index::Initiate             Elapsed Time[s] " << sysTime() - time << "\n";
+    std::cerr << "--Index::Initiate             Elapsed Time[s] " << std::setprecision(2) 
+              << sysTime() - time << "\n";
     std::cerr << "=>Index::SortHash                                                   \r";
     time = sysTime();
     _hsSort(begin(hs), begin(hs) + hsRealEnd, shape.weight, threads);
@@ -1289,7 +1289,7 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEmptyDir,
  * create ysa within [@hs_str, hs_end) of @hs
  * WARN::be sure @hs[hs_str] and @hs[hs_end] are Hs::headNode type
  */
-bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t hs_end, uint64_t & indexEmptyDir, bool f_shrink_hs, bool f_ysa_sorted, unsigned threads, uint64_t thd_blocklimit)
+bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t hs_end, uint64_t & indexEmptyDir, bool f_shrink_hs, bool f_ysa_sorted, bool f_yval_omitted, unsigned threads, uint64_t thd_blocklimit)
 {
     std::cerr << "=>Index::SortYSA                                                  \r";
     double time = sysTime();
@@ -1299,7 +1299,7 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
     uint64_t k     = hs_str + ptr;
     uint64_t block_size = ptr;
     uint64_t countMove = 0;
-
+    //merge duplicate blocks of same xval
     while(k < hs_end && _DefaultHs.getHeadPtr(hs[k]))
     {
         ptr = _DefaultHs.getHeadPtr(hs[k]);
@@ -1319,11 +1319,15 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
         for (uint64_t j = k + 1; j < k + ptr; j++)
         {
             hs[j - countMove]= hs[j];       
+            if (f_yval_omitted) {
+                _DefaultHs.setHsBodyY(hs[j - countMove], 0);
+            }
         }
         k += ptr;
     }
     uint64_t hs_str_modified;
     uint64_t hs_end_modified;
+    //mark additional tag at the end
     if (countMove > 2) //for most cases, countMove > 2
     {
         hs_str_modified = hs_str;
@@ -1341,13 +1345,13 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
         _DefaultHs.setHsHead(hs[prek + 1], 0, 0); 
         indexEmptyDir = prek; 
     }
-
+    //shrink to reduce memory footprint
     if (f_shrink_hs)
     {
         resize(hs, k + 2 - countMove);
         shrinkToFit(hs);
     }
-
+    //sort blocks by strand yval and sa
     #pragma omp parallel
     {
         uint64_t ptr = 0;
@@ -1361,32 +1365,28 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
             }   
         }
     }
-
     std::cerr << "  Index::SortYSA              Elapsed Time[s] " << sysTime() - time << std::endl;
     std::cerr << "=>Index::resize xstr                                            \r" ;
     k = hs_str_modified;
     uint64_t count = 0; 
     time = sysTime();
-    float c1 = 0, c2 = 0;
+    //count hs to get the size assigned to the xstr 
     while(_DefaultHs.getHeadPtr(hs[k]) && k < hs_end_modified)
     {
         ptr = _DefaultHs.getHeadPtr(hs[k]);
         if (ptr < thd_blocklimit)
         {
             ++count;
-            c1+=ptr;
         }
-        else
+        else if (!f_yval_omitted)
         {   
             for (unsigned j = k + 1; j < k + ptr; j++)
             {
-                if(_DefaultHs.getHsBodyY(hs[j] ^ hs[j - 1]))
-                {
+                if(_DefaultHs.getHsBodyY(hs[j] ^ hs[j - 1])){
                     ++count;
                 }
             }
             ++count;
-            c2+=ptr;
         }
         k += ptr;
     }
@@ -1394,7 +1394,6 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
     std::cerr << "  Index::resize xstr          Elapsed Time[s] " << sysTime() - time << std::endl;
     std::cerr << "=>Index::request dir                                                  \r";
     time = sysTime();
-    std::cout << "lbks " << c1 / (c1 + c2) << "\n";
 
     #pragma omp parallel 
     {
@@ -1408,14 +1407,10 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
                 ptr = _DefaultHs.getHeadPtr(hs[i]);
                 if (ptr < thd_blocklimit)
                 {
-                    for (unsigned j = i + 1; j < i + ptr; j++)
-                    {
-                        _DefaultHs.setHsBodyY(hs[j], 0);
-                    }
                     requestXNode_noCollision_Atomic(xstr, _DefaultHs.getHeadX(hs[i]), 
                            i + 1, _DefaultXNodeBase.xHead, _DefaultXNodeBase.returnDir);   
                 }
-                else
+                else if (!f_yval_omitted)
                 {
                     uint64_t xval = _DefaultHs.getHeadX(hs[i]);
                     requestXNode_noCollision(xstr, xval, 
@@ -1440,7 +1435,7 @@ bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t hs_str, uint64_t
 
 bool _createYSA(String<uint64_t> & hs, XString & xstr, uint64_t & indexEmptyDir, unsigned threads, uint64_t thd_blocklimit)
 {
-    return _createYSA(hs, xstr, 0, _DefaultHs.getLength(hs), indexEmptyDir, true, false, threads, thd_blocklimit);
+    return _createYSA(hs, xstr, 0, _DefaultHs.getLength(hs), indexEmptyDir, true, false, true, threads, thd_blocklimit);
 }
 
 /*
@@ -1857,7 +1852,7 @@ int _createHIndexFromHs(String<uint64_t> & hs,
 {
     dout << "chssort" << g_hs_str << length(hs) << g_hs_end << "\n";
     _hsSort(begin(hs) + g_hs_str, begin(hs) + g_hs_end, shape.weight, threads);
-    _createYSA(hs, xstr, g_hs_str, g_hs_end, indexEmptyDir, false, f_ysa_sorted, threads, thd_blocklimit);
+    _createYSA(hs, xstr, g_hs_str, g_hs_end, indexEmptyDir, false, f_ysa_sorted, true, threads, thd_blocklimit);
     return 0;
 }
 
