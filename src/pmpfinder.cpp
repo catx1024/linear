@@ -1466,7 +1466,6 @@ unsigned getDIndexMatchAll (DIndex & index,
         hashNexth(shape, begin(read) + k);
         uint64_t pre = ~0;
         if (++dt == mapParm.alpha)
-//        if (++dt == 1)
         {
             dt = 0;
             if(hashNextX(shape, begin(read) + k) ^ xpre)
@@ -1479,6 +1478,19 @@ unsigned getDIndexMatchAll (DIndex & index,
                     dt = 0;
                     continue;
                 }
+                /*
+                std::pair<uint64_t, uint64_t> str_end = queryHsRange(index, shape);
+                uint64_t pre_cord = ~0;
+                for (uint i = str_end.first; i < str_end.second; i++)
+                {
+                    uint64_t new_cord = getIndexValCord(index, i);
+                    uint64_t new_anchor = cord2anchor(new_anchor);
+                    if (get_cord_y (new_cord - pre_cord) > mapParm.kmerStep){
+                        appendValue (set, new_anchor);
+                    }
+                    pre_cord = new_cord;
+                }
+                */
                 while ((_DefaultHs.getHsBodyY(index.ysa[pos]) == shape.YValue || 
                         _DefaultHs.getHsBodyY(index.ysa[pos]) == 0))
                 {

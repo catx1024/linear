@@ -187,6 +187,9 @@ public:
     LShape & getShape();
 }; 
 
+std::pair<uint64_t, uint64_t> queryHsRange(HIndex, LShape & shape)
+
+
 typedef HIndex LIndex; 
 uint64_t _getSA_i1(uint64_t const & node);
 uint64_t _getSA_i2(uint64_t const & node);
