@@ -528,7 +528,7 @@ int map_(IndexDynamic & index,
 
 
 //Simple model of tasks and buffers
-//Buffers: only input from from one task allowed, multiple outputs 
+//Buffers: only input from one task allowed, multiple outputs 
 //tasks: multiple buffers out and in
 //Example:          
 //       [B0]--(t1)
@@ -576,7 +576,7 @@ struct SimpleTasks
 {
     StringSet<String<int> > buffers_in;  //this.[i][j]:pointers to jth buffers_in of ith task 
     StringSet<String<int> > buffers_out; 
-    String<SimpleBuffer>   buffers;      //all abailable buffers
+    String<SimpleBuffer>   buffers;      //all available buffers
 
     void updateBuffersIn (int tid);
     void updateBuffersOut(int tid);
