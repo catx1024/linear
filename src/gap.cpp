@@ -8,29 +8,6 @@ using std::endl;
 /*=============================================
 =               Glaobal Utilities             =
 =============================================*/
-/*
-struct BitVector() //uint64_t bit operations extractor
-{
-    String<unsigned> bits;
-    String<uint64_t> masks;
-    //setValue (int)
-    BitVector(String<int> & seg_lens)
-}
-BitVector::BitVector(String<int> & seg_lens)
-{
-    uint s = 0;
-    for (int i = 0; i < length(seg_lens); i++)
-    {
-        s += seg_lens[i];
-        if (s < 64)
-        {
-            appendValut(bits, s);
-            appendValue(masks, (1ULL << seg_lens[i]) - 1);
-        }
-    }
-}
-*/
-
 //NOTE::clip & map direction:: towards left < 0, right > 0, both 0
 int const g_sv_inv = 1;     
 int const g_sv_ins = 2;     
@@ -202,6 +179,108 @@ int print_clips_gvf_(StringSet<String<uint64_t> > & clips,
     }
     return 0;
 }
+
+struct GapParms
+{
+    //Global
+    uint64_t thD_tile_size;
+
+    //@mapGaps
+    int thd_max_segs_num; //max segs num allowed in each gap, gaps > this will abort all tiles
+
+    uint64_t thd_max_extend;  //Important::tune::whether process in gap or pmpfiner.h
+    uint64_t thd_max_extend_x;
+    uint64_t thd_max_extend_y; //>large gaps are supposed to be handled during the apx part.
+    int64_t thd_dxy_min;
+    int64_t thd_extend_xy; //extend at first or last cord of seqs
+    int64_t thd_max_chain_distance;
+    int64_t block_size; 
+    int64_t thd_cord_size; //NOTE::this is the cord size, may be different from thD_tile_size.
+    int64_t thd_cord_remap;
+    int64_t thd_cord_gap;
+
+    //@reform_tiles_
+    //int64_t thd_dxy_min; //skip ins del < this value todo tune later
+
+    //@clip_tlie
+    float thd_band_ratio;
+
+    //@c_clip_
+    int thd_merge1;
+    int thd_merge1_lower;
+    int thd_merge2;
+    int thd_width;
+    int64_t extend_window;
+    int64_t thd_ovlp_shift;
+    int64_t thd_merge_anchor;
+    int64_t thd_merge_drop;
+    int64_t thd_error_level;  // >>3 == * 0.125
+    int64_t thd_scan_radius;  //at least scan 5 elements in the genome for each kmer in the read
+    
+    //@c_clip_extend_
+    int thd_init_chain_da; 
+    int thd_init_chain_num;    
+    int thd_init_scan_radius;
+    int thd_da_upper;
+    int thd_da_lower;
+
+    //@c_sc_
+    float thd_exp_err;
+
+    //@map_g_anchor2_
+    int thd_abort_tiles;
+
+    GapParms();
+};
+
+GapParms::GapParms()
+{
+    thD_tile_size = 96;
+    //@mapGaps
+    thd_max_segs_num = 1000; //max segs num allowed in each gap, gaps > this will abort all tiles
+    thd_max_extend = 2000;  //Important::tune::whether process in gap or pmpfiner.h
+    thd_max_extend_x = thd_max_extend;
+    thd_max_extend_y = thd_max_extend; //>large gaps are supposed to be handled during the apx part.
+    thd_dxy_min = 80;
+    thd_extend_xy = 3; //extend at first or last cord of seqs
+    thd_max_chain_distance = thd_max_extend;
+    block_size = thD_tile_size; 
+    thd_cord_size = thD_tile_size; //NOTE::this is the cord size, may be different from thD_tile_size.
+    thd_cord_remap = 100;
+    thd_cord_gap = thd_gap + block_size;
+
+    //@reform_tiles_ 
+    //thd_dxy_min = 80; //skip ins del < this value todo tune later
+
+    //@clip_tile
+    thd_band_ratio = 0.5;
+
+    //@c_clip_
+    thd_merge1 = 3;
+    thd_merge1_lower = 10;
+    thd_merge2 = 20;
+    thd_width = 10;
+    extend_window = 100;
+    thd_ovlp_shift = 10;
+    thd_merge_anchor = 5;
+    thd_merge_drop = 6;
+    thd_error_level = 3;  // >>3 == * 0.125
+    thd_scan_radius = 3;  //at least scan 5 elements in the genome for each kmer in the read
+
+    //@c_clip_extend_
+    thd_init_chain_da = 10; 
+    thd_init_chain_num = 6;    
+    thd_init_scan_radius = 20;
+    thd_da_upper = 3;
+    thd_da_lower = -3;
+
+    //@c_sc_
+    thd_exp_err = 0.8;
+
+    //@map_g_anchor2_
+    thd_abort_tiles = 10;
+}
+
 
 //=======  End of interface function  =======*//
 
@@ -1222,14 +1301,16 @@ int map_interval(String<Dna5> & seq1, //genome
                           thD_err_rate,
                           parm1);
 }
-
+/*
 uint64_t try_dup_filter_(String<uint64_t> & dup_tiles, uint64_t gap_str, uint64_t gap_end, int direction)
 {
     for (uint64_t i = 0; i < length(dup_tiles); i++)
     {
-        
+
     }
+    return 0;
 }
+*/
 
 /**
  * Additional duplication (only) mapping in [gap_str,) towards right and (,gap_end] towards right.
@@ -2655,11 +2736,10 @@ int mapExtend_(StringSet<String<Dna5> > & seqs,
 {
     String <Dna5> & ref = seqs[get_cord_id(gap_str)];
     String<uint64_t> sp_tiles; 
-    float thd_da_zero = thD_err_rate; 
     g_mapHs_(ref, read, comstr,
              g_hs, tiles_str, f1, f2,
              gap_str, gap_end, anchor_lower, anchor_upper,
-             thd_da_zero, thD_tile_size, thd_dxy_min,
+             thd_err_rate, thD_tile_size, thd_dxy_min,
              g_map_rght, parm1
        );
     reform_tiles(ref, read, comstr, 
