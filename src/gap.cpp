@@ -813,7 +813,7 @@ int getGapChainScore(uint64_t const & anchor1, uint64_t const & anchor2)
         score_dy = dy - 145;
     }
     dout << "dax" << dx << g_hs_anchor_getX(anchor1) << g_hs_anchor_getX(anchor2) << g_hs_anchor_getY(anchor1) << g_hs_anchor_getY(anchor2) << score_dy << score_derr << da << dy << derr << "\n";
-    return 100 - dy - score_derr ;
+    return 100 - score_dy - score_derr ;
 }
 
 //Warn red> sychronize getApxChainScore3 of same logic  when modifiy this function  
