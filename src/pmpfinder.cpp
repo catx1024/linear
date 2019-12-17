@@ -2524,6 +2524,7 @@ int chainApxCordsBlocks (String<uint64_t> & cords,
 unsigned getDIndexMatchAll (DIndex & index,
                             String<Dna5> & read,
                             String<uint64_t> & set,
+                            String<uint64_t> & long_anchors,
                             uint64_t read_str,   //map [read_str, read_end) of read
                             uint64_t read_end,
                             MapParm & mapParm)
@@ -2571,8 +2572,10 @@ unsigned getDIndexMatchAll (DIndex & index,
                         uint64_t new_anchor = make_anchor(id, cordx, cordy, strand);
                         //todo::may out of boundary
                         //val = shift_cord (val, -cordy, cordy - get_cord_y(val));
+                        //dout << "lng" << shape.YValue << "\n";
                         if (shape2DIndexCordy(shape) == getDIndexCordy(val))
                         {
+                            //appendValue(long_anchors, new_anchor);
                             _DefaultHit.setLongPattern(new_anchor);
                             //std::cout << "long 1 id" << get_cord_id(new_anchor) << " " << get_cord_x(new_anchor) << "\n";
                         }
@@ -2762,13 +2765,18 @@ uint64_t filterAnchors2(Anchors & anchors, uint64_t shape_len, uint64_t thd_anch
         if (_DefaultHit.isLongPattern(anchors[i]))
         {
             anchors_long[ii] = anchors[i];
+            print_cord(_DefaultCord.hit2Cord_dstr(anchors_long[ii]), "anchors_long");
             _DefaultHit.unsetLongPattern(anchors_long[i]);
             ++ii;
+        }
+        else
+        {
+            dout << "anchors_short" << "\n";
         }
     }
     resize (anchors_long, ii);
     double t1 = sysTime();
-    filterAnchorsList(anchors_long, anchors_list, shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+    filterAnchorsList(anchors_long, anchors_list, shape_len, 0, thd_anchor_accept_min, thd_anchor_err_bit);
     t1 = sysTime() - t1;
     double t2 = sysTime();
     std::sort (begin(anchors_list), end(anchors_list), [](std::pair<unsigned, unsigned> & a, std::pair<unsigned, unsigned> & b){return a.second - a.first > b.second - b.first;});
@@ -2785,6 +2793,7 @@ uint64_t filterAnchors2(Anchors & anchors, uint64_t shape_len, uint64_t thd_anch
             anchors_xmean[i] += get_cord_x(anchors_long[j]);
         }
         anchors_xmean[i] /= anchors_list[i].second - anchors_list[i].first;
+        dout << "anchors_mean" << anchors_xmean[i] << "\n";
     }
     t2 = sysTime() - t2;
     double t3 = sysTime();
@@ -2805,20 +2814,48 @@ uint64_t filterAnchors2(Anchors & anchors, uint64_t shape_len, uint64_t thd_anch
     t3 = sysTime() - t3;
     double t = t1 + t2 + t3;
     resize (anchors.set, ii);
+    dout << t1 << t2 << t3 << length(anchors.set)<< "\n";
     return 0;
 }
 
-uint64_t filterAnchors(Anchors & anchors, uint64_t shape_len, uint64_t thd_anchor_accept_density, uint64_t thd_anchor_accept_min, unsigned thd_anchor_err_bit, uint64_t thd_max_anchors_num, int64_t thd_anchor_accept_err, int alg_type)
-{
-    if(alg_type == 1)
+uint64_t filterAnchors3(Anchors & anchors, String<uint64_t> & long_anchors, uint64_t shape_len, uint64_t thd_anchor_accept_density, uint64_t thd_anchor_accept_min, unsigned thd_anchor_err_bit)
+{    
+    if (anchors.length() <= 1)
     {
-        filterAnchors1(anchors, shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+        return 0;
     }
-    else if (alg_type == 2)
+    unsigned ii = 0;
+    String<std::pair<unsigned, unsigned> > anchors_list;
+    double t1 = sysTime();
+    filterAnchorsList(anchors.set, anchors_list, shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+    t1 = sysTime() - t1;
+    double t2 = sysTime();
+    for (unsigned i = 0; i < length(anchors_list); i++)
     {
-        filterAnchors1(anchors, shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+        for (unsigned j = anchors_list[i].first; j < anchors_list[i].second; j++)
+        {
+            anchors[ii++] = anchors[j];
+        }
+    }
+    resize (anchors.set, ii);  
+    t2 = sysTime() - t2;
+    return 0;
+}
+
+uint64_t filterAnchors(Anchors & anchors, String<uint64_t> & long_anchors, uint64_t shape_len, uint64_t thd_anchor_accept_density, uint64_t thd_anchor_accept_min, unsigned thd_anchor_err_bit, uint64_t thd_max_anchors_num, int64_t thd_anchor_accept_err, int alg_type)
+{
+    //if(alg_type == 1)
+    {
+        //filterAnchors1(anchors,  shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+        //filterAnchors3(anchors, long_anchors,  shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+    }
+    //else if (alg_type == 2)
+    {
+        //filterAnchors1(anchors,  shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
+        //filterAnchors2(anchors,  shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit);
 
         //filterAnchors2(anchors, shape_len, thd_anchor_accept_lens, thd_anchor_err_bit, thd_max_anchors_num, thd_anchor_accept_err);
+        filterAnchors2(anchors, shape_len, thd_anchor_accept_density,  thd_anchor_accept_min,  thd_anchor_err_bit, thd_max_anchors_num,  thd_anchor_accept_err);
     }
     return 0;
 }
@@ -3081,11 +3118,11 @@ int preFilterChains2(String<uint64_t> & hits,  String<UPair> & str_ends_p, void 
 }
 
 //chain anchors to hits
-int getAnchorHitsChains(Anchors & anchors, String<uint64_t> & hits, uint64_t shape_len, uint64_t read_len, 
+int getAnchorHitsChains(Anchors & anchors, String<uint64_t> & long_anchors, String<uint64_t> & hits, uint64_t shape_len, uint64_t read_len, 
     uint64_t thd_anchor_accept_density, uint64_t thd_anchor_accept_min, uint64_t thd_large_gap, unsigned thd_anchor_err_bit, uint64_t thd_max_anchors_num, int64_t thd_anchor_accept_err, unsigned alg_type_filter) 
 {
     double t1 = sysTime();
-    filterAnchors(anchors, shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit, thd_max_anchors_num, thd_anchor_accept_err, alg_type_filter) ;
+    filterAnchors(anchors, long_anchors, shape_len, thd_anchor_accept_density, thd_anchor_accept_min, thd_anchor_err_bit, thd_max_anchors_num, thd_anchor_accept_err, alg_type_filter) ;
     t1 = sysTime() - t1;
     double t2 = sysTime();
     String<UPair> str_ends;
@@ -3126,13 +3163,14 @@ uint64_t mnMapReadList(IndexDynamic & index,
     uint64_t read_str = get_cord_y(map_str);
     uint64_t read_end = get_cord_y(map_end);
     double tt1 = sysTime();
+    String<uint64_t> long_anchors;
     if (index.isHIndex())
     {  
         getHIndexMatchAll(index.hindex, read, anchors.set, map_str, map_end, mapParm);    
     }   
     else if (index.isDIndex())
     {
-        getDIndexMatchAll(index.dindex, read, anchors.set, read_str, read_end, mapParm);    
+        getDIndexMatchAll(index.dindex, read, anchors.set, long_anchors, read_str, read_end, mapParm);    
     }
     tt1 = sysTime() - tt1;
     double tt2 = sysTime();
@@ -3155,7 +3193,7 @@ uint64_t mnMapReadList(IndexDynamic & index,
         {
             alg_type_filter = 2;
         }
-        getAnchorHitsChains(anchors, hits, mapParm.shapeLen, length(read), thd_anchor_accept_density, thd_anchor_accept_min, thd_large_gap, thd_anchor_err_bit, thd_max_anchors_num, thd_anchor_accept_err, 2);
+        getAnchorHitsChains(anchors, long_anchors, hits, mapParm.shapeLen, length(read), thd_anchor_accept_density, thd_anchor_accept_min, thd_large_gap, thd_anchor_err_bit, thd_max_anchors_num, thd_anchor_accept_err, 2);
         t = sysTime() - t;
         
     }
