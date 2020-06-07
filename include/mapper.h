@@ -32,7 +32,6 @@ class Mapper : public P_Mapper
     Options::PathsType g_paths;
     uint f_map;     //map control flag 
     uint f_print;   //print control flag
-    uint64_t gap_len_min; //process gaps of length > this value
     int cord_size; //default cord size 
     FIOParms fio_parms;
 
@@ -77,7 +76,6 @@ public:
     Options::PathsType & getGPaths();
     uint & getMapFlag(){return f_map;}
     uint & getPrintFlag(){return f_print;}
-    uint getGapLenMin () {return gap_len_min;}
     int  getCordSize() {return cord_size;}
     FIOParms & getFIOParms(){return fio_parms;}
     void loadGenomes();

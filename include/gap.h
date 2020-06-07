@@ -30,7 +30,7 @@ struct GapParms
     uint64_t ref_len;
     uint64_t read_len;
     int int_precision;
-    int thd_tile_size;
+    int64_t thd_tile_size;
     CharString read_id;
 
     //extendClipRange() 
@@ -116,6 +116,10 @@ struct GapParms
     int64_t thd_mg1_danc_indel;
     int64_t thd_max_extend2;
 
+    //mapGaps
+    uint64_t thd_gap_min_len; //map gaps whose length > this value
+    int64_t thd_cord_gap;
+
     GapParms(float thd_error_rate);
     void clipChainParms(int shape_len, int step1, int step2, float thd_err_rate);
 };
@@ -135,11 +139,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
             String<UPair> & apx_gaps,
             StringSet<FeaturesDynamic> & f1,
             StringSet<FeaturesDynamic>& f2,
-            int64_t thd_gap, 
-            int64_t thd_tileSize,
-            float thd_err_rate,
-            GapParms & gap_parms
-           );
+            GapParms & gap_parms);
 
 int print_clips_gvf_(StringSet<String<uint64_t> > & clips, 
               StringSet<CharString> & readsId, 
