@@ -122,6 +122,7 @@ struct GapParms
 
     GapParms(float thd_error_rate);
     void clipChainParms(int shape_len, int step1, int step2, float thd_err_rate);
+    void printParms(std::string header = "pparmsd"); //debug function
 };
 
 uint64_t extendClip(String<Dna5> & seq1, String<Dna5> & seq2, String<uint64_t> & tiles, uint64_t ext_str, uint64_t ext_end, int direction, GapParms & gap_parms);

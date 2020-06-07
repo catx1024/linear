@@ -80,7 +80,7 @@ public:
     FIOParms & getFIOParms(){return fio_parms;}
     void loadGenomes();
     void clearIndex();
-    GapParms & getGapParms(){return gap_parms;}
+    GapParms & getGapParms(std::string header="pparms"){return gap_parms;}
 
     //=== pipeline2 of parallel buffer 
     void initBuffers(int, int, P_Parms & parms);

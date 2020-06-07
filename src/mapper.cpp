@@ -192,9 +192,11 @@ void Mapper::loadOptions(Options & options)
         {
             gap_parms.thd_gap_min_len = options.gap_len;
         }
+        gap_parms.thd_cord_gap = gap_parms.thd_gap_min_len + gap_parms.thd_tile_size;
         fm_handler_.setMapGapON(f_map);
     }
-    //dout << "gap_len"<< gap_len_min << options.gap_len << "\n";
+    //gap_parms.refresh();
+    dout << "gap_len"<< gap_parms.thd_gap_min_len << options.gap_len << "\n";
     if (options.apx_chain_flag == 0)
     {
         fm_handler_.setApxChainOFF(f_map);
@@ -583,6 +585,7 @@ int map_(IndexDynamic & index,
          StringSet<String<uint64_t> > & clips,
          StringSet<String<Dna5> > & seqs,
          StringSet<String<BamAlignmentRecordLink> >& bam_records,
+         GapParms & gap_parms,
          uint f_map,   //control flags
          uint threads,
          int p1)
@@ -610,10 +613,11 @@ int map_(IndexDynamic & index,
     {
         f_chain = 0;
     }
+    gap_parms.printParms("p1");
 #pragma omp parallel
 {
     //GapParms gap_parms(0.85);
-    GapParms gap_parms(0.2);
+    GapParms gap_parms_thread = gap_parms;
     unsigned size2 = length(reads) / threads;
     unsigned ChunkSize = size2;
     String<Dna5> comStr;
@@ -656,7 +660,7 @@ int map_(IndexDynamic & index,
             if (fm_handler_.isMapGap(f_map))
                 {
                 //<<debug
-                gap_parms.read_id = readsId[j];
+                gap_parms_thread.read_id = readsId[j];
                 if (readsId[j] == "SRR9001771.704150")
                 {
                     //dout << reads_id[j] << length(f1) << length(f2) << gap_len_min_tmp << feature_window_size << thd_err_rate << "\n";
@@ -667,7 +671,7 @@ int map_(IndexDynamic & index,
                 }
                 //>>debug
                 dout << length(f1) << length(f2) <<  feature_window_size << thd_err_rate << "\n";
-                mapGaps(seqs, reads[j], comStr, cordsTmp[c], cordsTmp2[c], clipsTmp[c], apx_gaps, f1, f2, gap_parms);
+                mapGaps(seqs, reads[j], comStr, cordsTmp[c], cordsTmp2[c], clipsTmp[c], apx_gaps, f1, f2, gap_parms_thread);
                 }
             if (fm_handler_.isAlign(f_map))
             {
@@ -774,6 +778,7 @@ int map(Mapper & mapper,
                  mapper.getClips(),
                  mapper.getGenomes(),
                  mapper.getBamRecords(),
+                 mapper.getGapParms(),
                  mapper.getMapFlag(),
                  mapper.getThreads(), 
                  p1);

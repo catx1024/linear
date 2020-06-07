@@ -77,7 +77,7 @@ GapParms::GapParms(float err_rate) : //estimated err_rate
     thd_mg1_danc_indel(80),
     thd_max_extend2(5000),
     //mapGaps
-    
+    //thd_gap_min_len(50),
     thd_cord_gap(thd_gap_min_len + thd_tile_size)
 
 { 
@@ -103,6 +103,27 @@ void GapParms::clipChainParms(int shape_len, int step1, int step2, float thd_err
         thd_ccps_clip2_lower = 15 * int_precision / thd_ccps_window_size;
     //}
 }
+void GapParms::printParms(std::string header)
+{
+    dout << header
+    << thd_etfas_shape_len
+    << thd_etfas_step1
+    << thd_etfas_step2
+
+    << thd_ccps_clip_min
+    << thd_ccps_clip_init
+    << thd_ccps_clip1_upper
+    << thd_ccps_clip2_lower
+    << thd_ccps_window_size
+
+    << thd_mg1_danc_indel
+    << thd_max_extend2
+    << "err"
+    << thd_gap_min_len 
+    << thd_tile_size 
+    << thd_cord_gap << "\n";
+}
+
 
 //NOTE::clip & map direction:: towards left < 0, right > 0, both 0
 int const g_sv_inv = 1;     
@@ -4032,6 +4053,7 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
     gather_gaps_y_ (cords_str, str_ends, apx_gaps, length(read), gap_parms.thd_cord_gap);
 
     int count = 0;
+    gap_parms.printParms();
     //NOTE cords_str[0] is the head, regular cords_str starts from 1
     for (unsigned i = 1; i < length(cords_str); i++)
     {
