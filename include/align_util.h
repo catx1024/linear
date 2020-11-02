@@ -26,6 +26,10 @@ public:
     String<unsigned> heads_table; //table pointing to first record of each line in .sam 
     CharString genome_id;
     int nm_i; //nm:i tag in .sam, the heads holds the whole(sum of) value of the line
+    String<TRow5A> row1s;
+    String<TRow5A> row2s;
+    String<CigarElement<> > dcigars;
+
 
     BamAlignmentRecordLink();
     void addNext(int id);
@@ -79,13 +83,17 @@ int insertBamRecordCigar (BamAlignmentRecord & bam_record,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                     int pos = -1
                    );
-
+int insertBamRecordCigar (BamAlignmentRecordLink & bam_record,
+                    Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
+                    Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
+                    int pos = -1
+                   );
 /*
  * Cigar of row1 and row2 are inserted to the cigar from the bam_record
  * beginPos are always updated by g_beginPos 
  * soft/Hard clip cigar are updated only if insert at the front(pos == 0)
  */
-int  insertBamRecord (BamAlignmentRecord & bam_record,
+int  insertBamRecord (BamAlignmentRecordLink & bam_record,
                       Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                       Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                       int g_id,

@@ -409,6 +409,7 @@ int writeSam(std::ofstream & target,
              CharString genome_id_next,
              FIOParms & fio_parms)
 {
+    //std::cerr << "wsgg " << it << "\n";
     int it_count = -1;
     BamAlignmentRecordLink & record = records[it];
     if (fio_parms.f_print_seq)
@@ -427,7 +428,7 @@ int writeSam(std::ofstream & target,
 
     SEQAN_ASSERT_EQ((__int32)BamAlignmentRecord::INVALID_POS + 1, (__int32)0);
     appendNumber(target, record.beginPos + 1);
-
+    std::cout << "wsr3=====================" << record.beginPos + 1 << "\n";
     writeValue(target, '\t');
 
     appendNumber(target, static_cast<__uint16>(record.mapQ));
@@ -451,12 +452,26 @@ int writeSam(std::ofstream & target,
             {
                 if (fio_parms.f_print_seq)
                 {
+//                    dout << "ps1" << records[it].beginPos
                     cigar2SamSeq(records[it].cigar[i], record.seq, it1, it2, fio_parms.f_is_align);
                 }
                 appendNumber(target, records[it].cigar[i].count);
                 writeValue(target, records[it].cigar[i].operation);
             }
             it_count++;
+
+//std::cout << "wsr" << length(records[it].row1s) << "\n";
+            for (int i = 0; i < length(records[it].row1s); ++i)
+            {
+                std::cout << "wsr1 " << records[it].row1s[i] << " " << it << "\n";
+                std::cout << "wsr2 " << records[it].row2s[i] << " " << it << "\n";
+            }
+            std::cout << "wsr3 ";
+            for (int i = 0; i < length(records[it].dcigars); ++i)
+            {
+                std::cout << records[it].dcigars[i].count << records[it].dcigars[i].operation ;
+            }
+            std::cout << "\n";
             if (records[it].isEnd())
             {
                 break;

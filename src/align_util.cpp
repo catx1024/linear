@@ -163,6 +163,15 @@ int clip_cigar (String<CigarElement<> > & cigar)
     }
     return 0;
 }
+void printCigar(String<CigarElement< > > &cigar, std::string header)
+{
+    std::cout << header << " ";
+    for (int i = 0; i < length(cigar); i++)
+    {
+        std::cout << cigar[i].count <<cigar[i].operation;
+    }
+    std::cout << "\n";
+}
 /*
  * Insert @cigr2 to @cigar1 at @pos 
  */
@@ -171,6 +180,9 @@ int insertCigar(String<CigarElement< > > &cigar1,
                 String<CigarElement< > > &cigar2)
 {
     int p = pos;
+    printCigar(cigar2, "necg2");
+    printCigar(cigar1, "necg3");
+    dout << "necg4" << pos << "\n";
     if (empty(cigar1))
     {
         cigar1 = cigar2;
@@ -219,15 +231,17 @@ int insertCigar(String<CigarElement< > > &cigar1,
     return 0;
 }
 
+
 /*
  * insert cigar to the original cigar 
  */
-int insertBamRecordCigar (BamAlignmentRecord & bam_record,
+int insertBamRecordCigar_ (BamAlignmentRecord & bam_record,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                     Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                     int pos
                    )
 {
+    dout << "ibc" << pos << "\n";
     if (pos < 0)
     {
         align2cigar(bam_record.cigar, row1, row2);
@@ -240,9 +254,77 @@ int insertBamRecordCigar (BamAlignmentRecord & bam_record,
         }
         String<CigarElement< > > tmp;
         align2cigar(tmp, row1, row2);
+        printCigar(tmp, "tmpcigar2");
         insertCigar(bam_record.cigar, pos, tmp);
     }
     return 0;
+}
+int insertBamRecordCigar(BamAlignmentRecord & bam_record,
+                    Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
+                    Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
+                    int pos)
+{
+    return insertBamRecordCigar_(bam_record, row1, row2, pos);
+}
+int insertBamRecordCigar (BamAlignmentRecordLink & bam_record,
+                    Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
+                    Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
+                    int pos
+                   )
+{
+    String<CigarElement< > > tmp;
+    align2cigar(tmp, row1, row2);
+    int p = pos;
+    if (p < 0)
+    {
+        //clear (bam_record.row1s);
+        //clear (bam_record.row2s);
+        //clear (bam_record.dcigars);
+        appendValue(bam_record.row1s, row1);
+        appendValue(bam_record.row2s, row2);
+        append(bam_record.dcigars, tmp);
+    }
+    else 
+    {
+        if (p == length(bam_record.row1s) || empty(bam_record.row1s))
+        {
+            appendValue(bam_record.row1s, row1);
+            appendValue(bam_record.row2s, row2);    
+        }
+        else
+        {
+            //insert(bam_record.row1s, p, row1);
+            //insert(bam_record.row2s, p, row2);
+            String<TRow5A> t1, t2;
+            if (p == 1 && bam_record.cigar[0].operation == 'S')
+            {
+                p = p - 1;
+                dout << "ips" << pos << p << "\n";
+            }
+            if (p == 0)
+            {
+                appendValue(t1, row1);
+                appendValue(t2, row2);
+            }
+            for (int i = 0; i < length(bam_record.row1s); i++)
+            {
+                appendValue(t1, bam_record.row1s[i]);
+                appendValue(t2, bam_record.row2s[i]);
+                if (i == p - 1)
+                {
+                    appendValue(t1, row1);
+                    appendValue(t2, row2);
+                }
+            }
+            bam_record.row1s = t1;
+            bam_record.row2s = t2;
+            std::cout << "xh1" << length(bam_record.row1s) << " " << p << " " << row1 << "\n";
+            std::cout << "xh2" << length(bam_record.row2s) << " " << p << " " << row2 << "\n";
+        }
+        insertCigar(bam_record.dcigars, p, tmp);
+    }
+    printCigar(tmp, "tmpcigar");
+    return insertBamRecordCigar_(bam_record, row1, row2, pos);
 }
 /**
  * @g_beignPos, @r_beginPos
@@ -319,7 +401,7 @@ int insertNewBamRecord (String<BamAlignmentRecordLink> & bam_records,
  * beginPos are always updated by g_beginPos 
  * soft/Hard clip cigar are updated only if insert at the front(pos == 0)
  */
-int  insertBamRecord (BamAlignmentRecord & bam_record,
+int  insertBamRecord (BamAlignmentRecordLink & bam_record,
                       Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
                       Row<Align<String<Dna5>, ArrayGaps> >::Type & row2, 
                       int g_id,
@@ -329,6 +411,7 @@ int  insertBamRecord (BamAlignmentRecord & bam_record,
                       int f_soft
                       )
 {
+    std::cout << "ibr1" << row1 << "\n";
     String<CigarElement<> > & cigar = bam_record.cigar;
     char op = 'S';
     if (!f_soft)
@@ -1150,13 +1233,15 @@ int mergeAlign2_(Row<Align<String<Dna5>,ArrayGaps> >::Type & row11,
     int64_t min_gaps_len;
     int64_t f_xy_min;
     int f_flag = findBestMerge_(align1, align2, min_clip1, min_clip2, min_gaps_len, f_xy_min);
-    dout << "ma2" << get_cord_y(cord2) << f_flag << "\n";
+    dout << "ma2" << get_cord_x(cord1) << get_cord_x(cord2) << get_cord_y(cord1) << get_cord_y(cord2) << f_flag << "\n";
     if (!f_flag)
     {
         f_flag |= createMergedRows_(row11, row12, row21, row22,  
             ref, read, comrev_read, min_clip1, min_clip2, min_gaps_len, f_xy_min,
             cord1, cord2);
     }
-    dout << "ma2_f" << f_flag << "\n";
+    std::cout << "ma2_f" << f_flag << " " <<  get_cord_x(cord1) << "\n";
+    std::cout << "ma2r11 " << row11 << "\n" << "ma2r12 " << row12 << "\n";
+    std::cout << "ma2r21 " << row21 << "\n" << "ma2r22 " << row22 << "\n";
     return f_flag;
 }
