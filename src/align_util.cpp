@@ -259,7 +259,6 @@ int insertNewBamRecord (String<BamAlignmentRecordLink> & bam_records,
                         uint16_t flag
                         )
 {
-    dout << "ib3" << g_beginPos << r_beginPos << "\n";
     BamAlignmentRecordLink bam_record;
     if (g_id >= 0)
     {
