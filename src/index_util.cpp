@@ -1581,6 +1581,7 @@ int createDIndex_serial(StringSet<String<Dna5> > & seqs,
         }  
     }
     std::cout << "createDIndex " << sysTime() - t << " " << sysTime() - t2 << "\n";
+    return 0;
 }
 
 /**
@@ -1841,6 +1842,7 @@ int createMDIndex(StringSet<String<Dna5> > & seqs,
     serr.print_message("Index::hash        ", 2, 1, std::cerr);
     serr.print_message("End creating index ", 2, 0, std::cerr);
     serr.print_message(sysTime() - t, 2, 1, std::cerr);
+    return 0;
 }
 
 /*----------  MHindx  ----------*/
@@ -1868,6 +1870,7 @@ int createMHIndex(IndexDynamic & index, uint64_t g_str, uint64_t g_end, uint64_t
     dout << "css1" << g_str << g_end << f_ysa_sorted << "\n";
     _createHIndexFromHs(hindex.ysa, hindex.xstr, hindex.getShape(), hindex.emptyDir,
                         hindex.ysa_str_end[g_str], hindex.ysa_str_end[g_end], f_ysa_sorted, thd_blocklimit, threads);
+    return 0;
 }
 
 /*----------  DynamicIndex   ----------*/
@@ -2030,5 +2033,6 @@ bool createIndexDynamic(StringSet<String<Dna5> > & seqs, IndexDynamic & index, u
         }
         else {/*NONE*/}
     }
+    return true;
 }
 
