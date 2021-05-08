@@ -1696,8 +1696,13 @@ int chainAnchorsBase(String<uint64_t> & anchors, StringSet<String<uint64_t> > & 
     int bestn = 5;
     String<ChainsRecord> chain_records;
     resize (chain_records, length(anchors));
+    double t1 = sysTime();
     getBestChains (anchors, chain_records, it_str, it_end, thd_chain_depth, thd_chain_dx_depth, chn_score.getScore, get_anchor_x);
+    t1 = sysTime() - t1;
+    double t2 = sysTime();
     traceBackChains(anchors, anchors_chains, chain_records, anchors_chains_score, chn_score.getAbortScore(), bestn);
+    t2 = sysTime() - t2;
+    dout << "cab2" << t1 << t2 << "\n";
     return 0;
 }
 
