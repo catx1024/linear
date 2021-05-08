@@ -1314,7 +1314,7 @@ int path_dst_2(typename Iterator<String<uint64_t> >::Type hitBegin,
                 cordy_str = get_cord_y(*itt);
             }
             extendWindow(f1[get_cord_strand(*itt)], f2[get_cord_id(*itt)], cords, cordy_str, cordy_end, score);
-            dout << "ebase" << f_last << get_cord_strand(*itt ^ *(itt + 1)) << da << get_cord_y(*itt) << cordy_str << f_da_indel << "\n";
+            //dout << "ebase" << f_last << get_cord_strand(*itt ^ *(itt + 1)) << da << get_cord_y(*itt) << cordy_str << f_da_indel << "\n";
         }
         if (f_last)
         {
@@ -1377,11 +1377,11 @@ bool path_dst(String<uint64_t> & hits,
         return path_dst_1 (beginHits(hits), endHits(hits), f1, f2, cords, read_str, read_end, read_len, thd_min_block_len);
     }
     else if (alg_type == 2){
-       print_cords(hits, "pd1");
+       //print_cords(hits, "pd1");
        _filterHits(hits, f1, f2);
-       print_cords(hits, "pd2");
+       //print_cords(hits, "pd2");
        path_dst_2 (beginHits(hits), endHits(hits), f1, f2, cords, read_str, read_end, read_len, thd_min_block_len);
-       print_cords(cords, "pd3");
+       //print_cords(cords, "pd3");
     }
     return 0;
 }
@@ -2074,7 +2074,7 @@ int chainBlocksCords(String<uint64_t> & cords, String<UPair> & str_ends_p,
         uint64_t strand_pre = 0;
         for (unsigned j = 0; j < length(cords_chains[i]); j++)
         {
-            dout << "gpcords2<<< " << i << j << cords_chains[i][j].first << cords_chains[i][j].second << "\n";
+            //dout << "gpcords2<<< " << i << j << cords_chains[i][j].first << cords_chains[i][j].second << "\n";
             cordy_pair = getUPForwardy(UPair(cords[cords_chains[i][j].first], cords[cords_chains[i][j].second - 1]), read_len);
             if (j > 0 && cordy_pair.first < cordy_pair_pre.second && ++cords_chains[i][j].first == cords_chains[i][j].second)
             {
@@ -2104,9 +2104,9 @@ int chainBlocksCords(String<uint64_t> & cords, String<UPair> & str_ends_p,
             strand_pre = strand_this;
         }
     }
-    print_cords(cords, "cords11");
+    //print_cords(cords, "cords11");
     _filterBlocksCords (cords_chains, cords, read_len, thd_major_limit, unsetEndFunc, setEndFunc, f_header);
-    print_cords(cords, "cords11");
+    //print_cords(cords, "cords11");
     return 0;
 }
 
@@ -2922,7 +2922,7 @@ int getAnchorHitsChains(Anchors & anchors, String<uint64_t> & hits, uint64_t sha
     {
         //note the hits_score is in denscending order
         str_ends_p_score[i] = hits_score[str_ends_p[i].first] - hits_score[str_ends_p[i].second - 1];
-        dout << "strp" << str_ends_p[i].first << str_ends_p[i].second << "\n";
+        //dout << "strp" << str_ends_p[i].first << str_ends_p[i].second << "\n";
     }
     //print_cords(hits, "cchits2");
     //<<debug
@@ -2947,7 +2947,7 @@ uint64_t mnMapReadList(IndexDynamic & index,
                        int alg_type,
                        int thd_best_n)
 {
-    std::cout << "mnmp0\n";
+    //std::cout << "mnmp0\n";
     //alg_type = 1;
     uint64_t read_str = get_cord_y(map_str);
     uint64_t read_end = get_cord_y(map_end);
