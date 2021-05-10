@@ -1555,7 +1555,7 @@ int traceBackChains0(String<ChainElementType> & elements,  StringSet<String<Chai
  * For any element in the @elements, it will be chained at most once in the most likely(highest score) chain
  */
 template <class ChainElementType>
-int traceBackChains(String<ChainElementType> & elements,  StringSet<String<ChainElementType> > & chains, String<ChainsRecord> & chain_records, String<int> & chains_score, int _chain_abort_score, int bestn)
+int traceBackChains1(String<ChainElementType> & elements,  StringSet<String<ChainElementType> > & chains, String<ChainsRecord> & chain_records, String<int> & chains_score, int _chain_abort_score, int bestn)
 {
     String<ChainElementType> chain;
     String<int> chain_score;
@@ -1565,6 +1565,7 @@ int traceBackChains(String<ChainElementType> & elements,  StringSet<String<Chain
     String<int> new_leaves;
     StringSet<String<int> > leaves;
     resize (new_leaves, 4);
+    double t1 = sysTime();
 
     for (int j = 0; j < length(chain_records); j++)
     {
@@ -1596,7 +1597,8 @@ int traceBackChains(String<ChainElementType> & elements,  StringSet<String<Chain
 
         }
     }
-    
+    t1 = sysTime() - t1;
+    double t2 = sysTime();
     String<std::pair<int,int> > tree_score_ranks;
     resize(tree_score_ranks, length (leaves));
     for (int i = 0; i < length(leaves); i++)
@@ -1627,6 +1629,35 @@ int traceBackChains(String<ChainElementType> & elements,  StringSet<String<Chain
             }
         } 
     }  
+    t2 = sysTime() - t2;
+    dout << "tb1" << t1 << t2 << length(leaves) << length(chain_records) << "\n";
+    return 0;
+}
+
+template <class ChainElementType>
+int traceBackChains(String<ChainElementType> & elements,  StringSet<String<ChainElementType> > & chains, String<ChainsRecord> & chain_records, String<int> & chains_score, int _chain_abort_score, int bestn)
+{
+    unsigned thd_root_num = 50;
+    String<int> tmp_count;
+    resize(tmp_count, length(elements), 0);
+    unsigned root_num = 0;
+    for (unsigned i = 0; i < length(chain_records); i++)
+    {
+        if (tmp_count[chain_records[i].root_ptr] == 0) 
+        {
+            root_num++;
+        }
+        tmp_count[chain_records[i].root_ptr] = 1;
+    }
+    if (root_num > thd_root_num)
+    {
+        traceBackChains0(elements, chains, chain_records, chains_score, _chain_abort_score, bestn);
+    }
+    else
+    {
+
+        traceBackChains1(elements, chains, chain_records, chains_score, _chain_abort_score, bestn);
+    }
     return 0;
 }
 
