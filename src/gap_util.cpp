@@ -766,10 +766,10 @@ int dropChainGapX(String<uint64_t> & chains,
         for (int i = 1; i < (int)length(chains); i++)
         {
             uint di = i + 1 >= gap_parms.thd_dcgx_window_size ? gap_parms.thd_dcgx_window_size : 1;
-            if (getX(chains[i]) - getX(chains[i - 1]) > gap_parms.thd_dcgx_Xdrop_peak || 
-                getX(chains[i]) - getX(chains[i + 1 - di]) > gap_parms.thd_dcgx_Xdrop_sum ||
-                getY(chains[i]) - getY(chains[i - 1]) > gap_parms.thd_dcgx_Xdrop_peak || 
-                getY(chains[i]) - getY(chains[i + 1 - di]) > gap_parms.thd_dcgx_Xdrop_sum)
+            if (int64_t(getX(chains[i]) - getX(chains[i - 1])) > gap_parms.thd_dcgx_Xdrop_peak ||
+                int64_t(getX(chains[i]) - getX(chains[i + 1 - di])) > gap_parms.thd_dcgx_Xdrop_sum ||
+                int64_t(getY(chains[i]) - getY(chains[i - 1])) > gap_parms.thd_dcgx_Xdrop_peak ||
+                int64_t(getY(chains[i]) - getY(chains[i + 1 - di])) > gap_parms.thd_dcgx_Xdrop_sum)
             {
                 if (f_erase)
                 {
