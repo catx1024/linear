@@ -3,6 +3,8 @@
 #include <seqan/align.h>
 #include "f_io.h"
 using namespace seqan;
+
+namespace linear{
 /*
  * Struct of gap recods containing start, end coordinates and alignment of gaps
  * Each record of c_pairs has two rows in the a_rows;
@@ -63,4 +65,6 @@ int alignCords (StringSet<String<Dna5> >& genomes,
                  int band = _default_block_size_ / 2
                 );
 void printCigar(String<CigarElement< > > &, std::string);
+
+}
 #endif

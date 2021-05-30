@@ -1,6 +1,8 @@
 #include <seqan/arg_parse.h>
 #include "base.h"
 
+namespace linear{
+
 bool is_number(const std::string& s)
 {
     return !s.empty() && std::find_if(s.begin(), 
@@ -216,5 +218,7 @@ parseCommandLine(Options & options, int argc, char const ** argv)
     getOptionValue(options.p1, parser, "p1");
 
     return seqan::ArgumentParser::PARSE_OK;
+
+}
 
 }

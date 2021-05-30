@@ -1,4 +1,7 @@
 #include "gap_util.h"
+
+namespace linear{
+
 /********************** START: Extend mapping for DUP *************************/
 /*
  * @gap_str, @gap_end are required to have the same strand
@@ -307,3 +310,5 @@ int mapGapGlobal(String<uint64_t> & tiles1,
     return 0;
 }
 */
+
+}

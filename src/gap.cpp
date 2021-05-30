@@ -7,6 +7,7 @@
 #include "gap_extra.h"
 //#include "gap.h"
 
+namespace linear{
 /*----------------------  Gap main  ----------------------*/
 /*
  * Map and resolve the gap specified by [@gap_str, @gap_end)
@@ -484,3 +485,4 @@ int mapGaps(StringSet<String<Dna5> > & seqs,
 
 /*=====  End of Index free Map and clip  ======*/
 
+}

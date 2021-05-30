@@ -9,6 +9,8 @@ using namespace seqan;
 using std::cout;
 using std::endl;
 
+namespace linear{
+
 int const typeFeatures1_16 = 0;
 int const typeFeatures1_32 = 1;
 int const typeFeatures2_48 = 2;
@@ -1856,7 +1858,7 @@ uint64_t filterAnchorsList(String<uint64_t> & anchors,
     anchors[0] = 0;
     uint64_t thd_1k_bit = 10;
     double t1 = sysTime();
-    sort_ska(begin(anchors), end(anchors));
+    sort_ska_wrapper(begin(anchors), end(anchors));
     uint64_t ak2 = anchors[1]; //2/4, 3/4
     uint64_t block_str = 1, count_anchors = 0;
     t1 = sysTime() - t1;
@@ -2609,5 +2611,5 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     return len;
 }
 
-
+}
 //End all mapper module

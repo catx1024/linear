@@ -9,6 +9,8 @@ using namespace seqan;
 using std::cout;
 using std::endl;
 
+namespace linear{
+
 int const typeFeatures1_16 = 0;
 int const typeFeatures1_32 = 1;
 int const typeFeatures2_48 = 2;
@@ -2657,5 +2659,5 @@ bool isOverlap (uint64_t cord1, uint64_t cord2,
     return len;
 }
 
-
+}
 //End all mapper module

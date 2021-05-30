@@ -7,6 +7,8 @@ using namespace seqan;
 using std::cout;
 using std::endl;
 
+namespace linear{
+
 /*__________________________________________________
   ---------- @s::Generic funcs  ----------*/
 ChainScoreParms::ChainScoreParms()
@@ -1113,6 +1115,8 @@ int getChainBlocksScore1(uint64_t const & cord11, uint64_t const & cord12,
     int score = p * 100; //100: float accuracy 0.01 
 
     return score;
+}
+
 }
 
 //End all mapper module

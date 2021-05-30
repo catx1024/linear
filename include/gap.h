@@ -8,7 +8,7 @@
 using namespace seqan;
 //ClipRecords : operator struct cord
 
-
+namespace linear{
 
 /**
  * Re-map gaps in cords.
@@ -34,4 +34,5 @@ int c_stream_(String<Dna5> & seq,String<uint64_t> & g_hs,
               uint64_t sq_str, uint64_t sq_end, int step, int shape_len, uint64_t type);
 int stickMainChain(String<uint64_t> & chain1, String<uint64_t> & chain2, uint64_t(*getX1)(uint64_t), uint64_t(*getY1)(uint64_t), uint64_t(*getX2)(uint64_t), uint64_t(*getY2)(uint64_t));
 
+}
 #endif

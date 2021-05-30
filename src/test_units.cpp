@@ -9,6 +9,9 @@
 #include "align_interface.h"
 #include "mapper.h"
 #include "test_units.h"
+
+namespace linear{
+
 //
 //Check bamrecord cigar on base level
 int check_cigar(StringSet<String<Dna5> > & genomes,
@@ -297,4 +300,6 @@ int check_apx_feature(StringSet<String<Dna5> > & seqs, unsigned threads)
 
 
     }
+}
+
 }

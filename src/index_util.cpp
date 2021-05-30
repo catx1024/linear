@@ -5,6 +5,8 @@
 
 using namespace seqan; 
 
+namespace linear{
+
 /**
  * definition of types of elements in dir (uint64_t)
  * bodyNode=
@@ -2051,3 +2053,4 @@ bool createIndexDynamic(StringSet<String<Dna5> > & seqs, IndexDynamic & index, u
     return false;
 }
 
+}

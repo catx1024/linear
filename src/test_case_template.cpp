@@ -44,6 +44,8 @@
 
 using namespace seqan; 
 
+namespace linear{
+
 template <typename TDna, typename TSpec>
 Mapper<TDna, TSpec>::Mapper(Options & options):
     record(options),
@@ -281,4 +283,6 @@ int main(int argc, char const ** argv)
     std::cerr << "results saved to " << options.getOutputPath() << "\n";
     
     return 0;
+}
+
 }

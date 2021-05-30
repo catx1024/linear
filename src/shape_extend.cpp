@@ -2,6 +2,8 @@
 
 using namespace seqan;
 
+namespace linear{
+
 //WARN!!:: Only odd Shape len is allowed if call the hash due to the double strand hash value
 //All even shape len will be converted to len + 1
 typedef Dna5 ShapeType;
@@ -207,4 +209,4 @@ uint64_t hashNextX(LShape & me, TIterS it)
     return me.XValue; 
 }
 
-
+}

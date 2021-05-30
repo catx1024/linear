@@ -5,6 +5,7 @@
 #include "mapper.h"
 using namespace seqan; 
 
+namespace linear{
 
 int process1 (Mapper & mapper, Options & options, int p1)
 {
@@ -83,11 +84,13 @@ int process3(Mapper & mapper, Options & options, int p1)
     return 0;
 }
 
+}
+
 int main(int argc, char const ** argv)
 {
     double time = sysTime();
     //(void)argc;
-    Options options;
+    linear::Options options;
     options.versions = "1.8.2";
     std::cerr << "["<< options.versions
               << "]\nEncapsulated: Mapping reads efficiently" << std::endl;
@@ -95,7 +98,7 @@ int main(int argc, char const ** argv)
     seqan::ArgumentParser::ParseResult res = parseCommandLine(options, argc, argv);
     if (res != seqan::ArgumentParser::PARSE_OK)
         return res == seqan::ArgumentParser::PARSE_ERROR;
-    Mapper mapper(options);
+    linear::Mapper mapper(options);
     /*
     uint thd_g_size = 300 << 20; //300M bases 
     if (lengthSum(mapper.getGenomes ()) > thd_g_size)
@@ -109,13 +112,14 @@ int main(int argc, char const ** argv)
         int p1 = 0; //temp var for test config
         if (options.bal_flag)
         {
-            process3 (mapper, options, p1);
+            linear::process3 (mapper, options, p1);
         }
         else
         {
-            process1 (mapper, options, p1);
+            linear::process1 (mapper, options, p1);
         }
     //}
     std::cerr << "Time in sum[s] " << sysTime() - time << "      \n";
     return 0;
 }
+

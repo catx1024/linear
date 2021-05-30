@@ -2,6 +2,8 @@
 #include "cords.h"
 #include "align_util.h"
 
+namespace linear{
+
 uint16_t bam_flag_rvcmp = 16;
 uint16_t bam_flag_rvcmp_nxt = 32;
 uint16_t bam_flag_suppl = 2048;
@@ -1275,4 +1277,6 @@ void copyRow(TRow & row1, TRow & row2)
     row1._sourceEndPos = row2._sourceEndPos;
     row1._clippingBeginPos = row2._clippingBeginPos;
     row1._clippingEndPos = row2._clippingEndPos;
+}
+
 }

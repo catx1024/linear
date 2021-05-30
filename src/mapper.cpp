@@ -12,6 +12,8 @@ using namespace seqan;
 using std::cerr;
 
 //efficient 
+namespace linear{
+
 MapParms parm1 ( 
         base_block_size_,     //blockSize,
         //Const_::_DELTA,          //delta(Const_::_DELTA),
@@ -1004,3 +1006,4 @@ int filter(Mapper & mapper,
     return 0;
 }
 
+}

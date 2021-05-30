@@ -3,6 +3,8 @@
 #include <seqan/sequence.h>
 using namespace seqan;
 
+namespace linear{
+    
 typedef typename Iterator<String<Dna5> >::Type TIterS;
 class LShape
 {
@@ -31,6 +33,8 @@ uint64_t hashNext_hs(LShape & me, TIterS it);
 uint64_t hashPre_hs(LShape & me, TIterS it);
 uint64_t hashNextV(LShape & me, TIterS it);
 uint64_t hashNextX(LShape & me, TIterS it);
+
+}
 
 #endif
 

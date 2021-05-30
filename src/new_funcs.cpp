@@ -7,6 +7,8 @@
     to the modules it belongs to.
     Keep this file as simple as possible to save time of compilation
 ==================================================================*/
+namespace linear{
+}
 
 
 

@@ -13,6 +13,8 @@
 using namespace seqan; 
 using std::cerr;
 
+namespace linear{
+
 int main(int argc, const char ** argv)
 {
     double time = sysTime();
@@ -35,4 +37,6 @@ int main(int argc, const char ** argv)
 
     std::cerr << "Time in sum[s] " << sysTime() - time << std::endl;
     return 0;
+}
+
 }

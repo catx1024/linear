@@ -5,6 +5,8 @@
  
 using namespace seqan;
 
+namespace linear{
+
 uint64_t const_anchor_zero = (1ULL << 20); // make sure y in cord < this  
 uint64_t const_cordx_max = (1ULL << 30) - 1; //cordx <= this
 uint64_t FORWARD_STRAND = 0;
@@ -678,5 +680,5 @@ int reformCordsDxDy1(String<uint64_t> & cords_str,
     return 0;
 }
 
-
+}
 

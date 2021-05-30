@@ -8,6 +8,7 @@
 #include "parallel_io.h"
 //#include "mapparm.h"
 
+namespace linear{
 
 class Mapper : public P_Mapper 
 {
@@ -110,5 +111,7 @@ int map(Mapper & mapper,
 int filter(Mapper & mapper, StringSet<String<short> > & buckets, String<Position<SeqFileIn>::Type> & fin_pos, int p1);
 int print_mapper_results(Mapper & mapper, 
     int f_p_mapper = 0, int p_in_id = 0, int p_out_id = 0); //parms to enable P_Mapper
+
+}
 
 #endif

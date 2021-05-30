@@ -3,6 +3,9 @@
 
 #include <seqan/sequence.h>
 #include "f_io.h"
+using seqan::String;
+
+namespace linear{
 /*
  * This is a simple model for parallel I/O buffers.
  * Restrictions : Only one thread is allowed to input or output at the same time,
@@ -10,7 +13,7 @@
  * Namely one thread fetch read from the disk, 
    multiple threads for jobs and one thread dump results to the disk simultaneously!
  */
-using seqan::String;
+
 /*----------  A wrapper of Random access list  ----------*/
 template<class T>
 class RandomList{
@@ -256,5 +259,6 @@ public:
 int p_ThreadProcess(P_Mapper & mapper, P_Parms & p_parms, int thread_id);
 /*----------  Global utilities  ----------*/
 //None
+}
 
 #endif

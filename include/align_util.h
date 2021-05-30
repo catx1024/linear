@@ -5,6 +5,8 @@
 
 using namespace seqan;
 
+namespace linear{
+
 extern uint16_t bam_flag_rvcmp;
 extern uint16_t bam_flag_rvcmp_nxt;
 extern uint16_t bam_flag_suppl;
@@ -186,5 +188,7 @@ extern int const flag_clip_tail;
 //copy row2 to row1
 //Row::_source is a struct of holder, which can't be copied by operator =
 void copyRow(TRow & row1, TRow & row2);
+
+}
 
 #endif

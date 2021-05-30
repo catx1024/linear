@@ -5,6 +5,9 @@
 #include "cords.h"
 #include "gap_util.h"
 
+namespace linear
+{
+
 /*=============================================
 =               Global Variables             =
 =============================================*/
@@ -4527,5 +4530,7 @@ void unusedGlobals()
     unused(c_shape_len2);
     unused(g_hs_bit1);
     unused(g_hs_bit2);
+
+}
 
 }

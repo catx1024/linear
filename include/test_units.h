@@ -5,6 +5,8 @@
 
 using seqan::String;
 
+namespace linear{
+
 int check_cigar(StringSet<String<Dna5> > & genomes,
                 String<Dna5> & read, 
                 String<Dna5> & comrevRead,
@@ -15,5 +17,6 @@ int check_index1(StringSet<String<Dna5> > & seqs, IndexDynamic & index, unsigned
 int check_index2(StringSet<String<Dna5> > & seqs, IndexDynamic & index, unsigned threads);
 int check_apx_feature(StringSet<String<Dna5> > & seqs, unsigned threads);
 
+}
 
 #endif

@@ -4,6 +4,10 @@
 #include <seqan/bam_io.h>
 #include "cords.h"
 
+namespace linear
+{
+    
+}
 /*==================================================================
 =            Headers to include new functions for test            =
     Once the functions have passed the tests, move the new functions

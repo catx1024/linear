@@ -9,6 +9,8 @@
 using namespace seqan;
 using std::ostringstream;
 
+namespace linear{
+
 extern const float    base_alpha_;
 extern const unsigned base_shape_len_;
 extern const unsigned base_block_size_;
@@ -249,7 +251,7 @@ struct CmpInt64
     CmpInt64 & operator >> (int64_t); //get max of ...
 };
 
-void sort_ska(Iterator<String<uint64_t> >::Type it_str, Iterator<String<uint64_t> >::Type it_end);
+void sort_ska_wrapper(Iterator<String<uint64_t> >::Type it_str, Iterator<String<uint64_t> >::Type it_end);
 
 int erf_1k(int64_t val);
 
@@ -259,5 +261,12 @@ int mod(int a, int b);
 template <typename T>
 void unused(T &&)
 { }
+
+template <typename T>
+int length(T & seqan_container)
+{
+    return int(seqan::length(seqan_container));
+}
+}
 
 #endif

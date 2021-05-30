@@ -8,6 +8,9 @@
 
 using namespace seqan;
 using std::cout;
+
+namespace linear{
+
 /*============================================================
 =               print Approximate mapping records            =
 ============================================================*/
@@ -1125,3 +1128,4 @@ void print_cords_sam (StringSet<String<uint64_t> > & cordset_str,
     print_align_sam (genms, reads, genmsId, readsId, bam_records, of, f_header, fio_parms);
 }   
 
+}

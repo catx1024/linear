@@ -9,6 +9,9 @@
 //TODO seqand::setclippedpositoin retrieve source postion that's not efficient
 //TODO make holder to rows, so set clip postion can be iteratored.
 using namespace seqan;
+
+namespace linear
+{
 /**
  * Notation regarding the Seqan::(clip function) declaration that might cause confusion
  * clippedBeginPosition() returns "unclipped view pos" 
@@ -56,6 +59,7 @@ void printAlign_(TRow & row1, TRow & row2)
                appendValue(tmpc, tmp - tmp / 10 * 10 + '0');
                tmp /= 10;
             }
+            int i;
             for (int j = 0; j < (int)length(tmpc); j++)
             {
                 line0[count + length(tmpc) - 1 - j] = tmpc[j];
@@ -502,13 +506,13 @@ int align_block (Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     Infix<String<Dna5> >::Type infix2;  
     if (strand)
     {
-        infix2 = infix(comrev_read, readStart, std::min(readEnd, length(read)));  
+        infix2 = infix(comrev_read, readStart, std::min(readEnd, (uint64_t)length(read)));
     }
     else
     {
-        infix2 = infix(read, readStart, std::min(readEnd, length(read)));  
+        infix2 = infix(read, readStart, std::min(readEnd, (uint64_t)length(read)));
     }
-    infix1 = infix(genome, genomeStart, std::min(genomeEnd, length(genome)));   
+    infix1 = infix(genome, genomeStart, std::min(genomeEnd, (uint64_t)length(genome)));
     assignSource (row1, infix1);  
     assignSource (row2, infix2); 
     int score = globalAlignment(row1, row2, scheme, AlignConfig<true, true, true, true>(), -band, band);
@@ -536,13 +540,13 @@ int cord2row_(Row<Align<String<Dna5>, ArrayGaps> >::Type & row1,
     Infix<String<Dna5> >::Type infix2;  
     if (strand)
     {
-        infix2 = infix(comrev_read, readStart, std::min(readEnd, length(read)));  
+        infix2 = infix(comrev_read, readStart, std::min(readEnd, (uint64_t)length(read)));
     }
     else
     {
-        infix2 = infix(read, readStart, std::min(readEnd, length(read)));  
+        infix2 = infix(read, readStart, std::min(readEnd, (uint64_t)length(read)));
     }
-    infix1 = infix(genome, genomeStart, std::min(genomeEnd, length(genome)));       
+    infix1 = infix(genome, genomeStart, std::min(genomeEnd, (uint64_t)length(genome)));
     //std::cout << "rowsize " << length(infix1) << " " << length(infix2) << "\n";
     assignSource (row1, infix1);  
     assignSource (row2, infix2); 
@@ -3045,3 +3049,5 @@ int alignCords (StringSet<String<Dna5> >& genomes,
     return 0;
 }
 /*=====  End of Main functions of aligning cords  ======*/
+
+}

@@ -2,6 +2,10 @@
 #define LINEAR_HEADER_ALIGN_BANDS_H
 #include <seqan/align.h>
 #include "f_io.h"
+
+namespace linear
+{
+
 struct MergeCordsBandsParm 
 {
     unsigned thd_search_depth;
@@ -14,4 +18,6 @@ int mergeCordsBands(String<uint64_t> & cords_str,
                     String<uint64_t> & bands_lower,
                     String<uint64_t> & bands_upper,
                     MergeCordsBandsParm & parm);
+}
+
 #endif

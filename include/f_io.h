@@ -7,6 +7,8 @@
 using namespace seqan;
 using std::ofstream;
 
+namespace linear{
+
 struct FIOParms
 {
     uint64_t thd_large_X; 
@@ -108,4 +110,7 @@ void print_cords_sam (StringSet<String<uint64_t> > & cordset_str,
                       int f_header,
                       FIOParms & fio_parms,
                       int f_parallel = 1);
+
+}
+
 #endif

@@ -2,6 +2,8 @@
 #define LINEAR_HEADER_GAP_EXTRA_H
 #include "gap_util.h"
 
+namespace linear{
+
 int try_dup(String<Dna5> & seq,
             String<Dna5> & read,
             String<Dna5> & comstr,
@@ -17,4 +19,7 @@ int try_dup(String<Dna5> & seq,
             //float band_ratio,
             //int direction)
             ;
+
+}
+
 #endif

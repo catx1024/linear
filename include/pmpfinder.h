@@ -6,6 +6,7 @@
 #include "index_util.h"
 using namespace seqan;
 
+namespace linear{
 //NOTE:Length of read < 1M;
 typedef std::array<int, 3> int96;
 typedef int96 FeatureType;
@@ -197,4 +198,6 @@ uint64_t filterAnchorsList(
     uint64_t thd_anchor_accept_min, 
     unsigned thd_anchor_err_bit);
     */
+
+}
 #endif

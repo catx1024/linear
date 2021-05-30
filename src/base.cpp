@@ -1,7 +1,8 @@
 #include "base.h"
 #include "ska_sort.hpp"
-using namespace seqan;
+//using namespace seqan;
 
+namespace linear{
 //===================================================================
 // variable and type def
 //===================================================================
@@ -323,7 +324,7 @@ PMRecord::PMRecord(Options & options)
  void Anchors::sort(Anchors::Iter sortBegin, Anchors::Iter sortEnd)
 {
     //std::sort(sortBegin, sortEnd);
-    ska_sort(sortBegin, sortEnd);
+    sort_ska_wrapper(sortBegin, sortEnd);
 }
  void Anchors::sortPos2(Anchors::Iter sortBegin, Anchors::Iter sortEnd){
     AnchorBase::AnchorType mask = AnchorBase::mask;
@@ -588,7 +589,7 @@ CmpInt64 & CmpInt64::operator >> (int64_t n)
     return *this;
 }
 
-void sort_ska(Iterator<String<uint64_t> >::Type it_str, Iterator<String<uint64_t> >::Type it_end)
+void sort_ska_wrapper(Iterator<String<uint64_t> >::Type it_str, Iterator<String<uint64_t> >::Type it_end)
 {
     ska_sort(it_str, it_end);
 }
@@ -605,3 +606,4 @@ int print_seq(String<Dna5> & seq, uint64_t str, uint64_t end, std::string header
 }
 int mod(int a, int b){int c = a % b; return c >= 0 ? c : c + b;}
 
+}

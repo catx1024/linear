@@ -7,6 +7,9 @@ using seqan::String;
 using seqan::StringSet;
 using seqan::CharString;
 using namespace seqan;
+
+namespace linear{
+
 /* @anchorX = x - y + g_hs_anchor_zero. g_hs_anchor_zero to restrict @anchorX > 0. 
    (bits overflow otherwise) such that -g_hs_anchor_zero <= x - y < g_hs_anchor_zero
 */
@@ -209,4 +212,6 @@ int reformCordsDxDy1(String<uint64_t> & cords_str,
                      unsigned & i1,
                      unsigned & i2,
                      CordsParms & cords_parms);
+
+}
 #endif

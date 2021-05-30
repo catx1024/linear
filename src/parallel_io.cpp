@@ -4,7 +4,9 @@
 #include "parallel_io.h"
 
 using namespace seqan;
+
 /*----------  Class P_Task  ----------*/
+namespace linear{
 P_Task::P_Task()
 {
     //0:task end; 1:normal(wait); 2:fetch reads; 4:calculate Records; 8:print results 
@@ -548,4 +550,6 @@ int p_ThreadProcess(P_Mapper & p_mapper, P_Parms & p_parms, int thread_id)
         }
     } 
     return 0;
+}
+
 }

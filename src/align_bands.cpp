@@ -3,6 +3,8 @@
 #include "cords.h"
 #include "align_bands.h"
 
+namespace linear{
+
 struct LineSegment
 {
     uint64_t str_x;
@@ -282,4 +284,6 @@ int mergeCordsBands(String<uint64_t> & cords_str,
     }
     unused(parm);
     return 0;
+}
+
 }

@@ -5,6 +5,9 @@
 #include "shape_extend.h"
 
 using namespace seqan;
+
+namespace linear{
+
 typedef uint64_t HType1;
 typedef uint64_t HType2;
 
@@ -241,4 +244,6 @@ bool createIndexDynamic(StringSet<String<Dna5> > & seq,
 // uint64_t getXDir(LIndex const & index, uint64_t const & xval, uint64_t const & yval)
 
 /*=====  End of Section comment block  ======*/
+}
+
 #endif

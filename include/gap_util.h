@@ -4,6 +4,8 @@
 #include "cluster_util.h"
 #include "pmpfinder.h"
 
+namespace linear{
+
 //NOTE::clip & map direction:: towards left < 0, right > 0, both 0
 extern uint64_t EmptyClipConst;
 int const g_sv_inv = 1;     
@@ -233,6 +235,6 @@ int mapGeneric(StringSet<String<Dna5> > & seqs,
                uint64_t gap_end, 
                GapParms & gap_parms);
 
-
+}
 
 #endif

@@ -4,6 +4,8 @@
 #include "base.h"
 #include "cords.h"
 using namespace seqan;
+
+namespace linear{
 struct ChainScoreParms
 {
     int64_t mean_d;  //mean of distance of kmers
@@ -59,4 +61,6 @@ int chainBlocksCords(String<uint64_t> & cords, String<UPair> & str_ends_p, Chain
 int getChainBlocksScore1(uint64_t const & cord11, uint64_t const & cord12, 
     uint64_t const & cord21, uint64_t const & cord22, 
     uint64_t const & read_len, ChainScoreParms & chn_sc_parms);
+
+}
 #endif
