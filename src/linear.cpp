@@ -94,6 +94,7 @@ int main(int argc, char const ** argv)
     if (res != seqan::ArgumentParser::PARSE_OK)
         return res == seqan::ArgumentParser::PARSE_ERROR;
     Mapper mapper(options);
+    options.printOptions();
     /*
     uint thd_g_size = 300 << 20; //300M bases 
     if (lengthSum(mapper.getGenomes ()) > thd_g_size)

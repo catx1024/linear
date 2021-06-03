@@ -50,6 +50,30 @@ void Options::printRunInfo(){
     std::cerr << name <<"["<< version << "]: " << sologan << std::endl; 
 }
 
+void Options::printOptions()
+{
+    std::cout << "printOptions" 
+              << " " << name                        
+              << " " << version 
+              << " " << oPath
+              << " " << sologan 
+              << " " << sensitivity 
+              << " " << thread
+              << " " << index_t
+              << " " << feature_t
+              << " " << gap_len
+              << " " << apx_chain_flag
+              << " " << aln_flag
+              << " " << sam_flag
+              << " " << reform_ccs_cigar_flag
+              << " " << read_group
+              << " " << sample_name
+              << " " << sequence_sam_flag
+              << " " << bal_flag
+              << " " << "\n";
+}
+
+
 /*
  * flip strand from 0, 1 to -1, 1;
  * strand = 0, 1, other values is not allowed

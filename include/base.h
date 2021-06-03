@@ -65,6 +65,7 @@ struct Options{
     Options();
     std::string getOutputPath() const;
     void printRunInfo();
+    void printOptions();
 }; 
 
 std::pair<uint, uint> 
